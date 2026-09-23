@@ -1,0 +1,3 @@
+[submodule "prostack-go"]
+	path = prostack-go
+	url = https://github.com/crylabsorg/prostack-go
