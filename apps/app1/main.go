@@ -7,6 +7,7 @@ import (
 
 	"github.com/crylabsorg/prostack-go/app1/config"
 	"github.com/crylabsorg/prostack-go/logger"
+	"github.com/crylabsorg/prostack-go/ps_grpc"
 	"github.com/crylabsorg/prostack-go/ps_healthcheck"
 	"github.com/crylabsorg/prostack-go/ps_http"
 	"github.com/crylabsorg/prostack-go/ps_metrics"
@@ -37,11 +38,16 @@ func main() {
 	})
 	logger.GetLogger(ctx).Debug("healthchecks registered")
 
+	grpcServer := ps_grpc.NewServer()
+
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
 		if err1 := ps_http.Run(ctx, cfg.HTTPListenAddr, mux, serviceName); err1 != nil {
 			logger.GetLogger(ctx).Fatal("http server error", zap.Error(err1))
 		}
+	})
+	wg.Go(func() {
+		ps_grpc.Start(ctx, cfg.GRPCListenAddr, grpcServer)
 	})
 	wg.Wait()
 	logger.GetLogger(ctx).Info("service gracefully stopped")
