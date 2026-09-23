@@ -1,14 +1,9 @@
-include prostack-go/make/consts.mk
+# Entry point for a system assembled from Go apps in apps/.
+ROOT_DIR := $(abspath $(dir $(firstword $(MAKEFILE_LIST))))
 
-##
-## Tests:
-.PHONY: test
-test: ## - Run tests for all services
-test: test-app1
+include $(ROOT_DIR)/prostack-go/make/consts.mk
+include $(ROOT_DIR)/prostack-go/make/apps.mk
 
-.PHONY: test-app1
-test-app1: ## - Run tests for app1
-	@echo "Running tests for app1..."
-	@cd apps/app1 && go test -v ./...
-
-include prostack-go/make/help.mk
+MODULE_DIRS := $(APP_DIRS)
+include $(ROOT_DIR)/prostack-go/make/modules.mk
+include $(ROOT_DIR)/prostack-go/make/help.mk
