@@ -16,7 +16,8 @@ func TestConfig(t *testing.T) {
 	expectedCfg := &Config{
 		LogPreset:      logger.PresetDevelopment,
 		ServiceName:    "app1",
-		HTTPListenAddr: ":33097",
+		HTTPListenAddr: ":33000",
+		GRPCListenAddr: ":43000",
 	}
 
 	require.Equal(t, expectedCfg, cfg)

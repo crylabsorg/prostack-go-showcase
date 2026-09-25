@@ -1,0 +1,16 @@
+name: prostack-go-showcase
+services:
+  redis:
+    image: redis:8.10.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+  jaeger:
+    image: jaeger:123
+    ports:
+      - ""
+    restart: unless-stopped
+volumes:
+  redis_data:

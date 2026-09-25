@@ -2,55 +2,43 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"net/http"
-	"sync"
+	"uuid"
 
 	"github.com/crylabsorg/prostack-go-showcase/user/config"
 	"github.com/crylabsorg/prostack-go/logger"
-	"github.com/crylabsorg/prostack-go/ps_grpc"
-	"github.com/crylabsorg/prostack-go/ps_healthcheck"
-	"github.com/crylabsorg/prostack-go/ps_http"
-	"github.com/crylabsorg/prostack-go/ps_metrics"
-	"github.com/crylabsorg/prostack-go/ps_shutdown"
-	"go.uber.org/zap"
+	"github.com/crylabsorg/prostack-go/ps_bootstrap"
+	"github.com/crylabsorg/prostack-go/ps_redis"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func main() {
-	cfg, err := config.New()
-	defer logger.Init(cfg.LogPreset)()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	logger.GetLogger(ctx).Debug("config loaded")
-	logger.GetLogger(ctx).Debug("logger inialized")
+	ps_bootstrap.Run(config.New, setup)
+}
 
-	mux := http.NewServeMux()
-	logger.GetLogger(ctx).Debug("mux initialized")
+func setup(ctx context.Context, _ *config.Config, app *ps_bootstrap.App) error {
+	redisClient := ps_redis.New(ctx, "redis://localhost:6379")
 
-	grpcServer := ps_grpc.NewServer()
-	logger.GetLogger(ctx).Debug("grpc server initialized")
+	app.Mux.HandleFunc("GET /v1/user", func(w http.ResponseWriter, r *http.Request) {
+		redisClient.Incr(r.Context(), "CALLS GET /v1/user")
 
-	if err != nil {
-		logger.GetLogger(ctx).Fatal("config is not loaded", zap.Error(err))
-	}
-	logger.GetLogger(ctx).Debug("shutdown logic prepared")
+		span := trace.SpanFromContext(r.Context())
+		span.AddEvent("hello world!!!")
+		err := errors.New("zallopa sluchilas'")
+		span.RecordError(err)
 
-	ps_metrics.Register(mux)
-	logger.GetLogger(ctx).Debug("metrics registered")
-	draining := ps_shutdown.New(cancel)
-	ps_healthcheck.Register(mux, ps_healthcheck.Options{
-		Draining: draining,
-	})
-	logger.GetLogger(ctx).Debug("healthchecks registered")
-
-	wg := sync.WaitGroup{}
-	wg.Go(func() {
-		if err1 := ps_http.Run(ctx, cfg.HTTPListenAddr, mux, cfg.ServiceName); err1 != nil {
-			logger.GetLogger(ctx).Fatal("http server error", zap.Error(err1))
+		logger.GetLogger(r.Context()).Info("new request")
+		type resp struct {
+			ID string `json:"id"`
+		}
+		encoder := json.NewEncoder(w)
+		w.Header().Set("Content-Type", "application/json")
+		if err := encoder.Encode(resp{ID: uuid.NewV7().String()}); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 		}
 	})
-	wg.Go(func() {
-		ps_grpc.Start(ctx, cfg.GRPCListenAddr, grpcServer)
-	})
-	wg.Wait()
-	logger.GetLogger(ctx).Info("service gracefully stopped")
+
+	return nil
 }
