@@ -14,10 +14,15 @@ func TestConfig(t *testing.T) {
 	cfg, err := New()
 	require.NoError(t, err)
 	expectedCfg := &Config{
-		LogPreset:      logger.PresetDevelopment,
-		ServiceName:    "app1",
-		HTTPListenAddr: ":33000",
-		GRPCListenAddr: ":43000",
+		LogPreset:                       logger.PresetDevelopment,
+		ServiceName:                     "app1",
+		HTTPListenAddr:                  ":33000",
+		GRPCListenAddr:                  ":43000",
+		OTEL_ServiceName:                "app1",
+		OTEL_MetricsExporter:            "ps_prometheus",
+		OTEL_TracesExporter:             "otlp",
+		OTEL_ExporterOTLPTracesProtocol: "grpc",
+		OTEL_ExporterOTLPTracesEndpoint: "http://localhost:4317",
 	}
 
 	require.Equal(t, expectedCfg, cfg)
