@@ -1,0 +1,25 @@
+package user
+
+import userv1 "github.com/crylabsorg/prostack-go-showcase/pkg/proto/user/v1"
+
+type createUserRequest struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+func (request createUserRequest) ToProto() *userv1.CreateUserRequest {
+	protoRequest := &userv1.CreateUserRequest{}
+	protoRequest.SetName(request.Name)
+	protoRequest.SetEmail(request.Email)
+	return protoRequest
+}
+
+type userResponse struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+func userResponseFromProto(user *userv1.User) userResponse {
+	return userResponse{user.GetId(), user.GetName(), user.GetEmail()}
+}
