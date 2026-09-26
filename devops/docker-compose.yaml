@@ -16,6 +16,14 @@ services:
     volumes:
       - redis_data:/data
     restart: unless-stopped
+  nats:
+    image: nats:2.14.6-alpine3.22
+    command: ["-js", "-sd", "/data"]
+    ports:
+      - "4222:4222"
+    volumes:
+      - nats_data:/data
+    restart: unless-stopped
   jaeger:
     image: jaegertracing/jaeger:2.21.0
     ports:
@@ -40,4 +48,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  nats_data:
   mongo_data:

@@ -1,2 +1,4 @@
-h1:kNHUfuZgtzKnSEq0ZTdZsEVvFfCzvwyKp5C6bKVp3GI=
+h1:WADyYOmUQLlrhelixexLLLxokDr8+gGDmL4BOCyxLlM=
 20260926000000_create_users.sql h1:++YbEhprUEg8YwG72cdy/Z62dhAgLbJAVm6Iph68K30=
+20260926000001_create_email_outbox.sql h1:c+zMfm7Nx7dKp/75x88+0nzcvMyjHAL9PDHg+SeMmxY=
+20260926000002_rename_user_outbox.sql h1:fr0t58o8kBkrcAtwompZdkdbK6bBWdsnTg62ijXjeNA=

@@ -2,8 +2,10 @@ package user
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -15,9 +17,21 @@ type Repository struct{ pool *pgxpool.Pool }
 func NewRepository(pool *pgxpool.Pool) *Repository { return &Repository{pool: pool} }
 
 func (r *Repository) Create(ctx context.Context, user User) error {
-	_, err := r.pool.Exec(ctx, "INSERT INTO users (id, name, email) VALUES ($1, $2, $3)", user.ID, user.Name, user.Email)
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin user creation: %w", err)
+	}
+	defer tx.Rollback(ctx)
+	_, err = tx.Exec(ctx, "INSERT INTO users (id, name, email) VALUES ($1, $2, $3)", user.ID, user.Name, user.Email)
 	if err == nil {
-		return nil
+		payload, marshalErr := json.Marshal(user.ToCreatedEvent())
+		if marshalErr != nil {
+			return marshalErr
+		}
+		_, err = tx.Exec(ctx, "INSERT INTO user_outbox (id, subject, payload) VALUES ($1, $2, $3)", user.ID, events.UserCreatedSubject, payload)
+		if err == nil {
+			return tx.Commit(ctx)
+		}
 	}
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23505" {

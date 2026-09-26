@@ -21,7 +21,9 @@ func setup(ctx context.Context, cfg *config.Config, app *ps_bootstrap.App) error
 		disconnect()
 	}()
 
+	r := user.NewRepository(pool)
+	go r.RunOutbox(ctx, cfg.NATSURL)
 	m := user.NewMetrics(app.MetricsRegistry.Registry)
-	user.RegisterGRPC(app.GRPC.Server, user.NewService(user.NewRepository(pool), m))
+	user.RegisterGRPC(app.GRPC.Server, user.NewService(r, m))
 	return nil
 }

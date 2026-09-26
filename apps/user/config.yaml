@@ -3,6 +3,7 @@ SERVICE_NAME: app1
 HTTP_LISTEN_ADDR: :33000
 GRPC_LISTEN_ADDR: :43000
 DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+NATS_URL: nats://localhost:4222
 
 OTEL_SERVICE_NAME: app1
 OTEL_METRICS_EXPORTER: ps_prometheus
