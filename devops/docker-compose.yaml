@@ -8,9 +8,26 @@ services:
       - redis_data:/data
     restart: unless-stopped
   jaeger:
-    image: jaeger:123
+    image: jaegertracing/jaeger:2.21.0
     ports:
-      - ""
+      - "16686:16686" # web ui
+      - "4317:4317" # grpc
+      - "4318:4318" # http
+    restart: unless-stopped
+  mongo:
+    image: mongo:8.3.11
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - mongo_data:/data/configdb
+    command:
+      [
+        "/bin/sh",
+        "-c",
+        'mongod --replSet my-replica-set --bind_ip_all & sleep 5 && mongosh --eval ''try { rs.initiate({_id:"my-replica-set",members:[{_id:0,host:"localhost:27017"}]}) } catch(e) { print(e) }'' && wait',
+      ]
     restart: unless-stopped
 volumes:
   redis_data:
+  mongo_data:
