@@ -10,6 +10,7 @@ type Config struct {
 	ServiceName    string        `mapstructure:"SERVICE_NAME" env:"SERVICE_NAME" validate:"required"`
 	HTTPListenAddr string        `mapstructure:"HTTP_LISTEN_ADDR" env:"HTTP_LISTEN_ADDR" validate:"required"`
 	GRPCListenAddr string        `mapstructure:"GRPC_LISTEN_ADDR" env:"GRPC_LISTEN_ADDR" validate:"required"`
+	DatabaseURL    string        `mapstructure:"DATABASE_URL" env:"DATABASE_URL" validate:"required"`
 
 	OTEL_ServiceName                string `mapstructure:"OTEL_SERVICE_NAME" env:"OTEL_SERVICE_NAME"`
 	OTEL_MetricsExporter            string `mapstructure:"OTEL_METRICS_EXPORTER" env:"OTEL_METRICS_EXPORTER"`

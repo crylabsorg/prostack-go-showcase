@@ -3,7 +3,7 @@ managed:
   enabled: true
   override:
     - file_option: go_package_prefix
-      value: github.com/crylabsorg/prostack-go/pkg/proto
+      value: github.com/crylabsorg/prostack-go-showcase/pkg/proto
 plugins:
   - local: bin/protoc-gen-go
     out: pkg/proto

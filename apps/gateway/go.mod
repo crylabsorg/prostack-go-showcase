@@ -4,7 +4,11 @@ go 1.27.1
 
 replace github.com/crylabsorg/prostack-go => ../../prostack-go
 
-require github.com/crylabsorg/prostack-go v0.0.0-00010101000000-000000000000
+require (
+	github.com/crylabsorg/prostack-go v0.0.0-00010101000000-000000000000
+	github.com/crylabsorg/prostack-go-showcase v0.0.0
+	google.golang.org/grpc v1.84.0
+)
 
 require (
 	code.dny.dev/ssrf v0.3.0 // indirect
@@ -72,6 +76,7 @@ require (
 	golang.org/x/text v0.42.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260825221802-da73d73af1c5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260921155816-b14227669459 // indirect
-	google.golang.org/grpc v1.84.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
+
+replace github.com/crylabsorg/prostack-go-showcase => ../..

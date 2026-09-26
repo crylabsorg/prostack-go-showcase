@@ -10,6 +10,7 @@ type Config struct {
 	ServiceName    string        `mapstructure:"SERVICE_NAME" env:"SERVICE_NAME" validate:"required"`
 	HTTPListenAddr string        `mapstructure:"HTTP_LISTEN_ADDR" env:"HTTP_LISTEN_ADDR" validate:"required"`
 	GRPCListenAddr string        `mapstructure:"GRPC_LISTEN_ADDR" env:"GRPC_LISTEN_ADDR"`
+	UserGRPCAddr   string        `mapstructure:"USER_GRPC_ADDR" env:"USER_GRPC_ADDR" validate:"required"`
 }
 
 func (c *Config) GetLogPreset() logger.Preset { return c.LogPreset }

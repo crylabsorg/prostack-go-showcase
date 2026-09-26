@@ -1,3 +1,4 @@
 LOG_PRESET: development
 SERVICE_NAME: gateway
 HTTP_LISTEN_ADDR: :33001
+USER_GRPC_ADDR: localhost:43000

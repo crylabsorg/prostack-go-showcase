@@ -18,6 +18,7 @@ func TestConfig(t *testing.T) {
 		ServiceName:                     "app1",
 		HTTPListenAddr:                  ":33000",
 		GRPCListenAddr:                  ":43000",
+		DatabaseURL:                     "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable",
 		OTEL_ServiceName:                "app1",
 		OTEL_MetricsExporter:            "ps_prometheus",
 		OTEL_TracesExporter:             "otlp",
