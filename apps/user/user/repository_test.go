@@ -34,14 +34,16 @@ func TestCreatePublishesUserCreated(t *testing.T) {
 	defer sub.Unsubscribe()
 	u := User{ID: uuid.NewString(), Name: "Ada", Email: uuid.NewString() + "@example.com"}
 	defer func() {
-		_, _ = pool.Exec(ctx, "DELETE FROM user_outbox WHERE id = $1", u.ID)
-		_, _ = pool.Exec(ctx, "DELETE FROM users WHERE id = $1", u.ID)
+		_, err := pool.Exec(ctx, "DELETE FROM user_outbox WHERE id = $1", u.ID)
+		require.NoError(t, err)
+		_, err = pool.Exec(ctx, "DELETE FROM users WHERE id = $1", u.ID)
+		require.NoError(t, err)
 	}()
 	require.NoError(t, r.Create(ctx, u))
 	var count int
 	require.NoError(t, pool.QueryRow(ctx, "SELECT count(*) FROM user_outbox WHERE id = $1", u.ID).Scan(&count))
 	require.Equal(t, 1, count)
-	require.NoError(t, r.publishNext(ctx, js))
+	require.NoError(t, NewService(r, nil).publishNext(ctx, js))
 	require.NoError(t, pool.QueryRow(ctx, "SELECT count(*) FROM user_outbox WHERE id = $1", u.ID).Scan(&count))
 	require.Zero(t, count)
 	messages, err := sub.Fetch(1)

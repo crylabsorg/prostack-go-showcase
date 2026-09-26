@@ -21,9 +21,7 @@ func TestServiceRejectsInvalidInput(t *testing.T) {
 		func() error { _, err := svc.Create(context.Background(), "Ada", "not-an-email"); return err },
 		func() error { _, err := svc.Get(context.Background(), "not-a-uuid"); return err },
 	} {
-		var got ps_error.PSError
-		require.ErrorAs(t, call(), &got)
-		require.Equal(t, ErrInvalidInput, got)
+		require.Equal(t, ErrInvalidInput, call())
 	}
 }
 

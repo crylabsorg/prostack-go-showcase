@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
 
+	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,7 +19,7 @@ func NewRepository(pool *pgxpool.Pool) *Repository { return &Repository{pool: po
 func (r *Repository) Create(ctx context.Context, user User) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("begin user creation: %w", err)
+		return err
 	}
 	defer tx.Rollback(ctx)
 	_, err = tx.Exec(ctx, "INSERT INTO users (id, name, email) VALUES ($1, $2, $3)", user.ID, user.Name, user.Email)
@@ -37,7 +37,7 @@ func (r *Repository) Create(ctx context.Context, user User) error {
 	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 		return ErrEmailExists
 	}
-	return fmt.Errorf("insert user: %w", err)
+	return err
 }
 
 func (r *Repository) Get(ctx context.Context, id string) (User, error) {
@@ -47,7 +47,45 @@ func (r *Repository) Get(ctx context.Context, id string) (User, error) {
 		return User{}, ErrNotFound
 	}
 	if err != nil {
-		return User{}, fmt.Errorf("get user: %w", err)
+		return User{}, err
 	}
 	return user.domain(), nil
+}
+
+type pendingEvent struct {
+	tx      pgx.Tx
+	id      string
+	subject string
+	payload []byte
+}
+
+func (r *Repository) nextPending(ctx context.Context) (*pendingEvent, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	pending := &pendingEvent{tx: tx}
+	err = tx.QueryRow(ctx, "SELECT id, subject, payload FROM user_outbox ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1").Scan(&pending.id, &pending.subject, &pending.payload)
+	if err != nil {
+		if rollbackErr := pending.rollback(ctx); rollbackErr != nil {
+			return nil, errors.Join(err, fmt.Errorf("rollback user outbox: %w", rollbackErr))
+		}
+		return nil, err
+	}
+	return pending, nil
+}
+
+func (e *pendingEvent) complete(ctx context.Context) error {
+	if _, err := e.tx.Exec(ctx, "DELETE FROM user_outbox WHERE id = $1", e.id); err != nil {
+		return err
+	}
+	return e.tx.Commit(ctx)
+}
+
+func (e *pendingEvent) rollback(ctx context.Context) error {
+	err := e.tx.Rollback(ctx)
+	if errors.Is(err, pgx.ErrTxClosed) {
+		return nil
+	}
+	return err
 }

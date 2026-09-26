@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 
+	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
 	"github.com/crylabsorg/prostack-go-showcase/user/config"
 	"github.com/crylabsorg/prostack-go-showcase/user/user"
 	"github.com/crylabsorg/prostack-go/ps_bootstrap"
+	"github.com/crylabsorg/prostack-go/ps_nats"
 	"github.com/crylabsorg/prostack-go/ps_pg"
 )
 
@@ -22,8 +24,24 @@ func setup(ctx context.Context, cfg *config.Config, app *ps_bootstrap.App) error
 	}()
 
 	r := user.NewRepository(pool)
-	go r.RunOutbox(ctx, cfg.NATSURL)
 	m := user.NewMetrics(app.MetricsRegistry.Registry)
-	user.RegisterGRPC(app.GRPC.Server, user.NewService(r, m))
+	s := user.NewService(r, m)
+	client, err := ps_nats.Connect(cfg.NATSURL)
+	if err != nil {
+		return err
+	}
+	js, err := client.JetStream()
+	if err == nil {
+		err = ps_nats.EnsureStream(js, events.UserStream, "user.*")
+	}
+	if err != nil {
+		client.Close()
+		return err
+	}
+	go func() {
+		defer client.Close()
+		s.RunOutbox(ctx, js)
+	}()
+	user.RegisterGRPC(app.GRPC.Server, s)
 	return nil
 }
