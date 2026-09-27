@@ -9,6 +9,7 @@ import (
 	"github.com/crylabsorg/prostack-go/ps_bootstrap"
 	"github.com/crylabsorg/prostack-go/ps_nats"
 	"github.com/crylabsorg/prostack-go/ps_pg"
+	"github.com/nats-io/nats.go/jetstream"
 )
 
 func main() {
@@ -30,9 +31,9 @@ func setup(ctx context.Context, cfg *config.Config, app *ps_bootstrap.App) error
 	if err != nil {
 		return err
 	}
-	js, err := client.JetStream()
+	js, err := jetstream.New(client)
 	if err == nil {
-		err = ps_nats.EnsureStream(js, events.UserStream, "user.*")
+		err = ps_nats.EnsureStream(ctx, js, events.UserStream, "user.*")
 	}
 	if err != nil {
 		client.Close()

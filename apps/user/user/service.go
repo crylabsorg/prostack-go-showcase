@@ -12,7 +12,7 @@ import (
 	"github.com/crylabsorg/prostack-go/ps_nats"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
 )
 
@@ -51,7 +51,7 @@ func (s *Service) Get(ctx context.Context, id string) (User, error) {
 	return user, err
 }
 
-func (s *Service) RunOutbox(ctx context.Context, js nats.JetStreamContext) {
+func (s *Service) RunOutbox(ctx context.Context, js jetstream.JetStream) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {
@@ -66,7 +66,7 @@ func (s *Service) RunOutbox(ctx context.Context, js nats.JetStreamContext) {
 	}
 }
 
-func (s *Service) publishNext(ctx context.Context, js nats.JetStreamContext) (err error) {
+func (s *Service) publishNext(ctx context.Context, js jetstream.JetStream) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	pending, err := s.repository.nextPending(ctx)

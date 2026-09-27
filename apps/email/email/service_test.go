@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -14,6 +16,17 @@ import (
 type failingSender struct{}
 
 func (failingSender) Send(context.Context, Welcome) error { return errors.New("delivery failed") }
+
+type failingMessage struct {
+	jetstream.Msg
+	data []byte
+}
+
+func (m failingMessage) Data() []byte                       { return m.data }
+func (m failingMessage) Headers() nats.Header               { return nil }
+func (m failingMessage) Subject() string                    { return "user.created" }
+func (m failingMessage) Term() error                        { return errors.New("terminate message") }
+func (m failingMessage) NakWithDelay(_ time.Duration) error { return errors.New("nak message") }
 
 func TestServiceLogsAcknowledgementFailures(t *testing.T) {
 	for _, test := range []struct {
@@ -30,8 +43,7 @@ func TestServiceLogsAcknowledgementFailures(t *testing.T) {
 			restore := zap.ReplaceGlobals(zap.New(core))
 			defer restore()
 
-			msg := nats.NewMsg("user.created")
-			msg.Data = []byte(test.data)
+			msg := failingMessage{data: []byte(test.data)}
 			(&service{sender: test.sender}).handleMessage(context.Background(), msg)
 
 			require.Equal(t, 1, logs.Len())
