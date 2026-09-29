@@ -2,27 +2,23 @@ package user
 
 import (
 	"context"
-	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
 	"github.com/crylabsorg/prostack-go/ps_nats"
+	"github.com/crylabsorg/prostack-go/ps_test"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCreatePublishesUserCreated(t *testing.T) {
-	databaseURL, natsURL := os.Getenv("TEST_DATABASE_URL"), os.Getenv("TEST_NATS_URL")
-	if databaseURL == "" || natsURL == "" {
-		t.Skip("set TEST_DATABASE_URL and TEST_NATS_URL for integration test")
-	}
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, databaseURL)
-	require.NoError(t, err)
+	pool := ps_test.NewPostgresContainer(t, filepath.Join("..", "schema.sql"))
 	defer pool.Close()
 	r := NewRepository(pool)
+	natsURL := ps_test.NewNATSContainer(t)
 	client, err := ps_nats.Connect(natsURL)
 	require.NoError(t, err)
 	defer client.Close()

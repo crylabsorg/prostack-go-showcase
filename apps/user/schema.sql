@@ -1,12 +1,12 @@
 CREATE TABLE users (
     id uuid PRIMARY KEY DEFAULT uuidv7(),
-    name text NOT NULL,
-    email text NOT NULL UNIQUE
+    email text NOT NULL UNIQUE,
+    first_name text,
+    last_name text
 );
 
 CREATE TABLE user_outbox (
     id uuid PRIMARY KEY DEFAULT uuidv7(),
     subject text NOT NULL,
-    payload jsonb NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now()
+    payload jsonb NOT NULL
 );

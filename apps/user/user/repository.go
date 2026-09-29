@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
 	"github.com/jackc/pgx/v5"
@@ -22,7 +21,7 @@ func (r *Repository) Create(ctx context.Context, user User) error {
 		return err
 	}
 	defer tx.Rollback(ctx)
-	_, err = tx.Exec(ctx, "INSERT INTO users (id, name, email) VALUES ($1, $2, $3)", user.ID, user.Name, user.Email)
+	_, err = tx.Exec(ctx, "INSERT INTO users (id, first_name, email) VALUES ($1, $2, $3)", user.ID, user.Name, user.Email)
 	if err == nil {
 		payload, marshalErr := json.Marshal(user.ToCreatedEvent())
 		if marshalErr != nil {
@@ -42,7 +41,7 @@ func (r *Repository) Create(ctx context.Context, user User) error {
 
 func (r *Repository) Get(ctx context.Context, id string) (User, error) {
 	var user modelUser
-	err := r.pool.QueryRow(ctx, "SELECT id, name, email FROM users WHERE id = $1", id).Scan(&user.ID, &user.Name, &user.Email)
+	err := r.pool.QueryRow(ctx, "SELECT id, first_name, email FROM users WHERE id = $1", id).Scan(&user.ID, &user.Name, &user.Email)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return User{}, ErrNotFound
 	}
@@ -65,10 +64,10 @@ func (r *Repository) nextPending(ctx context.Context) (*pendingEvent, error) {
 		return nil, err
 	}
 	pending := &pendingEvent{tx: tx}
-	err = tx.QueryRow(ctx, "SELECT id, subject, payload FROM user_outbox ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1").Scan(&pending.id, &pending.subject, &pending.payload)
+	err = tx.QueryRow(ctx, "SELECT id, subject, payload FROM user_outbox ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1").Scan(&pending.id, &pending.subject, &pending.payload)
 	if err != nil {
 		if rollbackErr := pending.rollback(ctx); rollbackErr != nil {
-			return nil, errors.Join(err, fmt.Errorf("rollback user outbox: %w", rollbackErr))
+			return nil, errors.Join(err, rollbackErr)
 		}
 		return nil, err
 	}

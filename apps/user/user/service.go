@@ -55,7 +55,7 @@ func (s *Service) RunOutbox(ctx context.Context, js jetstream.JetStream) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {
-		if err := s.publishNext(ctx, js); err != nil && !errors.Is(err, pgx.ErrNoRows) && ctx.Err() == nil {
+		if err := s.publishNext(ctx, js); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			logger.GetLogger(ctx).Error("publish user outbox", zap.Error(err))
 		}
 		select {
@@ -75,7 +75,7 @@ func (s *Service) publishNext(ctx context.Context, js jetstream.JetStream) (err 
 	}
 	defer func() {
 		if rollbackErr := pending.rollback(ctx); rollbackErr != nil {
-			err = errors.Join(err, fmt.Errorf("rollback user outbox: %w", rollbackErr))
+			err = errors.Join(err, rollbackErr)
 		}
 	}()
 	if err := ps_nats.Publish(ctx, js, pending.subject, pending.id, pending.payload); err != nil {

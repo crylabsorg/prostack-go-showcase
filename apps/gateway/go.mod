@@ -7,6 +7,7 @@ replace github.com/crylabsorg/prostack-go => ../../prostack-go
 require (
 	github.com/crylabsorg/prostack-go v0.0.0-00010101000000-000000000000
 	github.com/crylabsorg/prostack-go-showcase v0.0.0
+	github.com/stretchr/testify v1.12.1
 	google.golang.org/grpc v1.84.0
 )
 
@@ -39,7 +40,6 @@ require (
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spf13/viper v1.21.0 // indirect
-	github.com/stretchr/testify v1.12.1 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.20.1 // indirect
