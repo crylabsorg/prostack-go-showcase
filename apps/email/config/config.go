@@ -17,11 +17,6 @@ type Config struct {
 	MailgunDomain       string        `mapstructure:"MAILGUN_DOMAIN" env:"MAILGUN_DOMAIN"`
 	MailgunAPIKey       string        `mapstructure:"MAILGUN_API_KEY" env:"MAILGUN_API_KEY"`
 	MailgunBaseURL      string        `mapstructure:"MAILGUN_BASE_URL" env:"MAILGUN_BASE_URL"`
-	OTELServiceName     string        `mapstructure:"OTEL_SERVICE_NAME" env:"OTEL_SERVICE_NAME"`
-	OTELMetricsExporter string        `mapstructure:"OTEL_METRICS_EXPORTER" env:"OTEL_METRICS_EXPORTER"`
-	OTELTracesExporter  string        `mapstructure:"OTEL_TRACES_EXPORTER" env:"OTEL_TRACES_EXPORTER"`
-	OTELTracesProtocol  string        `mapstructure:"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL" env:"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL"`
-	OTELTracesEndpoint  string        `mapstructure:"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT" env:"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"`
 }
 
 func (c *Config) GetLogPreset() logger.Preset { return c.LogPreset }

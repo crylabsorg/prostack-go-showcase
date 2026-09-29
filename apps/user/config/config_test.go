@@ -20,11 +20,6 @@ func TestConfig(t *testing.T) {
 		GRPCListenAddr:      ":43001",
 		DatabaseURL:         "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable",
 		NATSURL:             "nats://localhost:4222",
-		OTELServiceName:     "app1",
-		OTELMetricsExporter: "ps_prometheus",
-		OTELTracesExporter:  "otlp",
-		OTELTracesProtocol:  "grpc",
-		OTELTracesEndpoint:  "http://localhost:4317",
 	}
 
 	require.Equal(t, expectedCfg, cfg)

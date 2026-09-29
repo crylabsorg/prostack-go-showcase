@@ -2,18 +2,12 @@ package user
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net/mail"
 	"strings"
-	"time"
 
-	"github.com/crylabsorg/prostack-go/logger"
 	"github.com/crylabsorg/prostack-go/ps_nats"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/nats-io/nats.go/jetstream"
-	"go.uber.org/zap"
 )
 
 type Service struct {
@@ -52,34 +46,5 @@ func (s *Service) Get(ctx context.Context, id string) (User, error) {
 }
 
 func (s *Service) RunOutbox(ctx context.Context, js jetstream.JetStream) {
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	for {
-		if err := s.publishNext(ctx, js); err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			logger.GetLogger(ctx).Error("publish user outbox", zap.Error(err))
-		}
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-		}
-	}
-}
-
-func (s *Service) publishNext(ctx context.Context, js jetstream.JetStream) (err error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	pending, err := s.repository.nextPending(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if rollbackErr := pending.rollback(ctx); rollbackErr != nil {
-			err = errors.Join(err, rollbackErr)
-		}
-	}()
-	if err := ps_nats.Publish(ctx, js, pending.subject, pending.id, pending.payload); err != nil {
-		return fmt.Errorf("publish %s: %w", pending.id, err)
-	}
-	return pending.complete(ctx)
+	ps_nats.RunOutbox(ctx, js, s.repository)
 }

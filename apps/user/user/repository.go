@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
+	"github.com/crylabsorg/prostack-go/ps_nats"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -58,7 +59,7 @@ type pendingEvent struct {
 	payload []byte
 }
 
-func (r *Repository) nextPending(ctx context.Context) (*pendingEvent, error) {
+func (r *Repository) Next(ctx context.Context) (ps_nats.OutboxMessage, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -66,22 +67,29 @@ func (r *Repository) nextPending(ctx context.Context) (*pendingEvent, error) {
 	pending := &pendingEvent{tx: tx}
 	err = tx.QueryRow(ctx, "SELECT id, subject, payload FROM user_outbox ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1").Scan(&pending.id, &pending.subject, &pending.payload)
 	if err != nil {
-		if rollbackErr := pending.rollback(ctx); rollbackErr != nil {
+		if rollbackErr := pending.Rollback(ctx); rollbackErr != nil {
 			return nil, errors.Join(err, rollbackErr)
+		}
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ps_nats.ErrOutboxEmpty
 		}
 		return nil, err
 	}
 	return pending, nil
 }
 
-func (e *pendingEvent) complete(ctx context.Context) error {
+func (e *pendingEvent) ID() string      { return e.id }
+func (e *pendingEvent) Subject() string { return e.subject }
+func (e *pendingEvent) Payload() []byte { return e.payload }
+
+func (e *pendingEvent) Complete(ctx context.Context) error {
 	if _, err := e.tx.Exec(ctx, "DELETE FROM user_outbox WHERE id = $1", e.id); err != nil {
 		return err
 	}
 	return e.tx.Commit(ctx)
 }
 
-func (e *pendingEvent) rollback(ctx context.Context) error {
+func (e *pendingEvent) Rollback(ctx context.Context) error {
 	err := e.tx.Rollback(ctx)
 	if errors.Is(err, pgx.ErrTxClosed) {
 		return nil

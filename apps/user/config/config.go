@@ -12,11 +12,6 @@ type Config struct {
 	GRPCListenAddr      string        `mapstructure:"GRPC_LISTEN_ADDR" env:"GRPC_LISTEN_ADDR" validate:"required"`
 	DatabaseURL         string        `mapstructure:"DATABASE_URL" env:"DATABASE_URL" validate:"required"`
 	NATSURL             string        `mapstructure:"NATS_URL" env:"NATS_URL" validate:"required"`
-	OTELServiceName     string        `mapstructure:"OTEL_SERVICE_NAME" env:"OTEL_SERVICE_NAME"`
-	OTELMetricsExporter string        `mapstructure:"OTEL_METRICS_EXPORTER" env:"OTEL_METRICS_EXPORTER"`
-	OTELTracesExporter  string        `mapstructure:"OTEL_TRACES_EXPORTER" env:"OTEL_TRACES_EXPORTER"`
-	OTELTracesProtocol  string        `mapstructure:"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL" env:"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL"`
-	OTELTracesEndpoint  string        `mapstructure:"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT" env:"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"`
 }
 
 func (c *Config) GetLogPreset() logger.Preset { return c.LogPreset }

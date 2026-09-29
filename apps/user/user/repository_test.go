@@ -40,7 +40,7 @@ func TestCreatePublishesUserCreated(t *testing.T) {
 	var count int
 	require.NoError(t, pool.QueryRow(ctx, "SELECT count(*) FROM user_outbox WHERE id = $1", u.ID).Scan(&count))
 	require.Equal(t, 1, count)
-	require.NoError(t, NewService(r, nil).publishNext(ctx, js))
+	require.NoError(t, ps_nats.PublishOutboxOnce(ctx, js, r))
 	require.NoError(t, pool.QueryRow(ctx, "SELECT count(*) FROM user_outbox WHERE id = $1", u.ID).Scan(&count))
 	require.Zero(t, count)
 	batch, err := consumer.Fetch(1)
