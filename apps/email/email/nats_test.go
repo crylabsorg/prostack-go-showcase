@@ -28,7 +28,7 @@ func (m failingMessage) Subject() string                    { return "user.creat
 func (m failingMessage) Term() error                        { return errors.New("terminate message") }
 func (m failingMessage) NakWithDelay(_ time.Duration) error { return errors.New("nak message") }
 
-func TestServiceLogsAcknowledgementFailures(t *testing.T) {
+func TestNATSControllerLogsAcknowledgementFailures(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		data   string
@@ -44,7 +44,7 @@ func TestServiceLogsAcknowledgementFailures(t *testing.T) {
 			defer restore()
 
 			msg := failingMessage{data: []byte(test.data)}
-			(&service{sender: test.sender}).handleMessage(context.Background(), msg)
+			(&natsController{service: &service{sender: test.sender}}).handleMessage(context.Background(), msg)
 
 			require.Equal(t, 1, logs.Len())
 			require.Contains(t, logs.All()[0].ContextMap()["error"], test.want)

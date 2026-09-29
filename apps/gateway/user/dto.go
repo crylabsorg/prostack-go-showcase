@@ -20,6 +20,6 @@ type userResponse struct {
 	Email string `json:"email"`
 }
 
-func userResponseFromProto(user *userv1.User) userResponse {
+func newUserResponse(user *userv1.User) userResponse {
 	return userResponse{user.GetId(), user.GetName(), user.GetEmail()}
 }

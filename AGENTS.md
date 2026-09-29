@@ -2,8 +2,9 @@
 
 # Project conventions
 
-- Each service keeps its domain, model, repository, service, error, metrics, and gRPC implementation files together in one Go package named after the service. For example, `apps/user/user/{domain,model,repository,service,errors,metrics,grpc}.go` all use `package user`.
+- Each service keeps its domain, model, repository, service, error, metrics, and transport controller files together in one Go package named after the service. For example, `apps/user/user/{domain,model,repository,service,errors,metrics,grpc}.go` all use `package user`. Keep NATS message handling in `nats.go`, Kafka message handling in `kafka.go`, and business logic in `service.go` without broker dependencies. Keep HTTP gateway request and response DTOs and their conversions in `dto.go`.
 - Keep methods that convert a domain type to another representation in `domain.go` beside that type. For example, define `User.ToProto()` beside `User`.
+- Limit API request bodies in Traefik, not Go handlers.
 - Define service errors as `ps_error.PSError` with explicit error code, HTTP status, and gRPC status. Return them directly from gRPC handlers; `ps_grpc.ErrorInterceptor` converts them and handles unexpected errors. In HTTP gateways, use `controller.WriteError` to read the status from the error details instead of maintaining a separate status mapping.
 - Use `edition = "2024";` in `.proto` files.
 - Always pin dependency and tool versions to their complete release version everywhere, including Docker Compose, GitHub Actions, Go modules, and Makefile commands. Avoid major-only, minor-only, `latest`, and floating tags or refs.

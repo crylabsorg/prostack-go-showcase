@@ -1,0 +1,74 @@
+http:
+  routers:
+    traefik-dashboard:
+      rule: Host(`traefik.prostack.io`)
+      service: api@internal
+      entryPoints:
+        - websecure
+        - limit-api-body
+      tls: {}
+    gateway:
+      rule: Host(`api.prostack.io`)
+      service: gateway
+      entryPoints:
+        - websecure
+        - limit-api-body
+      tls: {}
+      middlewares:
+        - cors-api
+        - limit-api-body
+    frontend:
+      rule: Host(`prostack.io`)
+      service: frontend
+      entryPoints:
+        - websecure
+        - limit-api-body
+      tls: {}
+    grafana:
+      rule: Host(`grafana.prostack.io`)
+      service: grafana
+      entryPoints:
+        - websecure
+        - limit-api-body
+      tls: {}
+
+  middlewares:
+    limit-api-body:
+      buffering:
+        maxRequestBodyBytes: 1048576
+    cors-api:
+      headers:
+        accessControlAllowOriginList:
+          - https://prostack.io
+        accessControlAllowCredentials: true
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - Content-Type
+          - Authorization
+        accessControlMaxAge: 86400
+        addVaryHeader: true
+
+  services:
+    gateway:
+      loadBalancer:
+        servers:
+          - url: http://host.docker.internal:33000
+    frontend:
+      loadBalancer:
+        servers:
+          - url: http://host.docker.internal:4000
+    grafana:
+      loadBalancer:
+        servers:
+          - url: http://host.docker.internal:3000
+
+tls:
+  certificates:
+    - certFile: /etc/traefik/certs/prostack.crt
+      keyFile: /etc/traefik/certs/prostack.key

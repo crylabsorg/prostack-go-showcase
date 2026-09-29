@@ -16,8 +16,8 @@ func TestConfig(t *testing.T) {
 	expectedCfg := &Config{
 		LogPreset:           logger.PresetDevelopment,
 		ServiceName:         "app1",
-		HTTPListenAddr:      ":33000",
-		GRPCListenAddr:      ":43000",
+		HTTPListenAddr:      ":33001",
+		GRPCListenAddr:      ":43001",
 		DatabaseURL:         "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable",
 		NATSURL:             "nats://localhost:4222",
 		OTELServiceName:     "app1",

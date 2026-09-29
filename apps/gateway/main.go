@@ -23,9 +23,9 @@ import (
 //	@in							cookie
 //	@name						refreshToken
 
-// @securityDefinitions.apikey	ApiKey
-// @in							header
-// @name						X-Api-Key
+//	@securityDefinitions.apikey	ApiKey
+//	@in							header
+//	@name						X-Api-Key
 
 func main() {
 	ps_bootstrap.Run(config.New, setup)
