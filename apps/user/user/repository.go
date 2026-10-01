@@ -52,45 +52,99 @@ func (r *Repository) Get(ctx context.Context, id string) (User, error) {
 	return user.domain(), nil
 }
 
+type pendingEvents struct {
+	tx       pgx.Tx
+	events   []pendingEvent
+	finished bool
+}
+
 type pendingEvent struct {
-	tx      pgx.Tx
 	id      string
 	subject string
 	payload []byte
 }
 
-func (r *Repository) Next(ctx context.Context) (ps_nats.OutboxMessage, error) {
+func (r *Repository) NextBatch(ctx context.Context, limit int) ([]ps_nats.OutboxMessage, error) {
+	if limit < 1 {
+		return nil, errors.New("outbox batch size must be positive")
+	}
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	pending := &pendingEvent{tx: tx}
-	err = tx.QueryRow(ctx, "SELECT id, subject, payload FROM user_outbox ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1").Scan(&pending.id, &pending.subject, &pending.payload)
+	rows, err := tx.Query(ctx, "SELECT id, subject, payload FROM user_outbox ORDER BY id LIMIT $1 FOR UPDATE SKIP LOCKED", limit)
 	if err != nil {
-		if rollbackErr := pending.Rollback(ctx); rollbackErr != nil {
+		if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
 			return nil, errors.Join(err, rollbackErr)
-		}
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ps_nats.ErrOutboxEmpty
 		}
 		return nil, err
 	}
-	return pending, nil
+	defer rows.Close()
+	batch := &pendingEvents{tx: tx}
+	for rows.Next() {
+		var event pendingEvent
+		if err := rows.Scan(&event.id, &event.subject, &event.payload); err != nil {
+			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
+				return nil, errors.Join(err, rollbackErr)
+			}
+			return nil, err
+		}
+		batch.events = append(batch.events, event)
+	}
+	if err := rows.Err(); err != nil {
+		if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
+			return nil, errors.Join(err, rollbackErr)
+		}
+		return nil, err
+	}
+	if len(batch.events) == 0 {
+		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
+			return nil, err
+		}
+		return nil, ps_nats.ErrOutboxEmpty
+	}
+	messages := make([]ps_nats.OutboxMessage, len(batch.events))
+	for i := range batch.events {
+		messages[i] = &pendingBatchEvent{batch: batch, index: i}
+	}
+	return messages, nil
 }
 
-func (e *pendingEvent) ID() string      { return e.id }
-func (e *pendingEvent) Subject() string { return e.subject }
-func (e *pendingEvent) Payload() []byte { return e.payload }
+type pendingBatchEvent struct {
+	batch *pendingEvents
+	index int
+}
 
-func (e *pendingEvent) Complete(ctx context.Context) error {
-	if _, err := e.tx.Exec(ctx, "DELETE FROM user_outbox WHERE id = $1", e.id); err != nil {
+func (e *pendingBatchEvent) ID() string      { return e.batch.events[e.index].id }
+func (e *pendingBatchEvent) Subject() string { return e.batch.events[e.index].subject }
+func (e *pendingBatchEvent) Payload() []byte { return e.batch.events[e.index].payload }
+
+func (r *Repository) CompleteBatch(ctx context.Context, messages []ps_nats.OutboxMessage) error {
+	b := messages[0].(*pendingBatchEvent).batch
+	if b.finished {
+		return nil
+	}
+	ids := make([]string, len(messages))
+	for i, message := range messages {
+		ids[i] = message.ID()
+	}
+	if _, err := b.tx.Exec(ctx, "DELETE FROM user_outbox WHERE id = ANY($1::uuid[])", ids); err != nil {
 		return err
 	}
-	return e.tx.Commit(ctx)
+	if err := b.tx.Commit(ctx); err != nil {
+		return err
+	}
+	b.finished = true
+	return nil
 }
 
-func (e *pendingEvent) Rollback(ctx context.Context) error {
-	err := e.tx.Rollback(ctx)
+func (r *Repository) RollbackBatch(ctx context.Context, messages []ps_nats.OutboxMessage) error {
+	b := messages[0].(*pendingBatchEvent).batch
+	if b.finished {
+		return nil
+	}
+	b.finished = true
+	err := b.tx.Rollback(ctx)
 	if errors.Is(err, pgx.ErrTxClosed) {
 		return nil
 	}

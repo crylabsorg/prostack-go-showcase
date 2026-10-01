@@ -41,7 +41,7 @@ func setup(ctx context.Context, cfg *config.Config, app *ps_bootstrap.App) error
 	}
 	go func() {
 		defer client.Close()
-		s.RunOutbox(ctx, js)
+		(&ps_nats.OutboxPublisher{JS: js, Outbox: r}).Run(ctx)
 	}()
 	user.RegisterGRPC(app.GRPC.Server, s)
 	return nil

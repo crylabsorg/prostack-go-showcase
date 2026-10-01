@@ -5,9 +5,7 @@ import (
 	"net/mail"
 	"strings"
 
-	"github.com/crylabsorg/prostack-go/ps_nats"
 	"github.com/google/uuid"
-	"github.com/nats-io/nats.go/jetstream"
 )
 
 type Service struct {
@@ -43,8 +41,4 @@ func (s *Service) Get(ctx context.Context, id string) (User, error) {
 		s.metrics.Fetched.Inc()
 	}
 	return user, err
-}
-
-func (s *Service) RunOutbox(ctx context.Context, js jetstream.JetStream) {
-	ps_nats.RunOutbox(ctx, js, s.repository)
 }

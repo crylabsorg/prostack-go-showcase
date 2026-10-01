@@ -51,9 +51,7 @@ func (c *natsController) consume(ctx context.Context) error {
 	return ps_nats.Consume(ctx, consumer, 50, c.handleMessage)
 }
 
-func (c *natsController) handleMessage(ctx context.Context, msg jetstream.Msg) {
-	msgCtx, span := ps_nats.TraceContext(ctx, msg)
-	defer span.End()
+func (c *natsController) handleMessage(ctx context.Context, msg jetstream.Msg) error {
 	var event events.UserCreated
 	err := json.Unmarshal(msg.Data(), &event)
 	if err != nil {
@@ -61,9 +59,9 @@ func (c *natsController) handleMessage(ctx context.Context, msg jetstream.Msg) {
 			err = errors.Join(err, termErr)
 		}
 	} else {
-		err = c.service.sendWelcome(msgCtx, Welcome{ID: event.ID, Name: event.Name, Email: event.Email})
+		err = c.service.sendWelcome(ctx, Welcome{ID: event.ID, Name: event.Name, Email: event.Email})
 		if err == nil {
-			err = msg.DoubleAck(msgCtx)
+			err = msg.DoubleAck(ctx)
 		} else {
 			if nakErr := msg.NakWithDelay(30 * time.Second); nakErr != nil {
 				err = errors.Join(err, nakErr)
@@ -71,7 +69,7 @@ func (c *natsController) handleMessage(ctx context.Context, msg jetstream.Msg) {
 		}
 	}
 	if err != nil {
-		span.RecordError(err)
-		logger.GetLogger(msgCtx).Error("send welcome email", zap.Error(err))
+		logger.GetLogger(ctx).Error("send welcome email", zap.Error(err))
 	}
+	return err
 }
