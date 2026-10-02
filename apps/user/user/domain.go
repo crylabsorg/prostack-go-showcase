@@ -11,8 +11,8 @@ type User struct {
 	Email string
 }
 
-func (user User) ToCreatedEvent() events.UserCreated {
-	return events.UserCreated{ID: user.ID, Name: user.Name, Email: user.Email}
+func (user User) ToCreatedEvent() events.UserCreatedEvent {
+	return events.UserCreatedEvent{ID: user.ID, Name: user.Name, Email: user.Email}
 }
 
 func (user User) ToProto() *userv1.User {

@@ -26,5 +26,5 @@ func TestMailgunSender(t *testing.T) {
 	sender, err := NewSender(&config.Config{Provider: "mailgun", MailgunDomain: "example.com", MailgunAPIKey: "key", From: "welcome@example.com", MailgunBaseURL: server.URL})
 	require.NoError(t, err)
 	sender.(*mailgunSender).client = server.Client()
-	require.NoError(t, sender.Send(context.Background(), Welcome{ID: "1", Name: "Ada", Email: "ada@example.com"}))
+	require.NoError(t, sender.Send(context.Background(), SendWelcomeInput{ID: "1", Name: "Ada", Email: "ada@example.com"}))
 }

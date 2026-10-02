@@ -1,6 +1,6 @@
 package email
 
-type Welcome struct {
+type SendWelcomeInput struct {
 	ID    string `json:"ID"`
 	Name  string `json:"Name"`
 	Email string `json:"Email"`

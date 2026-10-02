@@ -15,7 +15,9 @@ import (
 
 type failingSender struct{}
 
-func (failingSender) Send(context.Context, Welcome) error { return errors.New("delivery failed") }
+func (failingSender) Send(context.Context, SendWelcomeInput) error {
+	return errors.New("delivery failed")
+}
 
 type failingMessage struct {
 	jetstream.Msg

@@ -32,7 +32,7 @@ func NewSender(c *config.Config) (Sender, error) {
 	return &mailgunSender{client: &http.Client{Timeout: 20 * time.Second}, endpoint: strings.TrimRight(base, "/") + "/v3/" + url.PathEscape(c.MailgunDomain) + "/messages", apiKey: c.MailgunAPIKey, from: c.From}, nil
 }
 
-func (s *mailgunSender) Send(ctx context.Context, w Welcome) error {
+func (s *mailgunSender) Send(ctx context.Context, w SendWelcomeInput) error {
 	form := url.Values{"from": {s.from}, "to": {w.Email}, "subject": {"Welcome"}, "text": {"Welcome, " + w.Name + "!"}}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.endpoint, strings.NewReader(form.Encode()))
 	if err != nil {

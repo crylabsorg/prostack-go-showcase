@@ -31,7 +31,7 @@ func (c *natsController) run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		default:
+		case <-time.After(5 * time.Second):
 		}
 	}
 }
@@ -52,14 +52,14 @@ func (c *natsController) consume(ctx context.Context) error {
 }
 
 func (c *natsController) handleMessage(ctx context.Context, msg jetstream.Msg) error {
-	var event events.UserCreated
+	var event events.UserCreatedEvent
 	err := json.Unmarshal(msg.Data(), &event)
 	if err != nil {
 		if termErr := msg.Term(); termErr != nil {
 			err = errors.Join(err, termErr)
 		}
 	} else {
-		err = c.service.sendWelcome(ctx, Welcome{ID: event.ID, Name: event.Name, Email: event.Email})
+		err = c.service.sendWelcome(ctx, SendWelcomeInput{ID: event.ID, Name: event.Name, Email: event.Email})
 		if err == nil {
 			err = msg.DoubleAck(ctx)
 		} else {

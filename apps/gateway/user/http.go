@@ -2,8 +2,6 @@ package user
 
 import (
 	"encoding/json/v2"
-	"errors"
-	"io"
 	"net/http"
 
 	userv1 "github.com/crylabsorg/prostack-go-showcase/pkg/proto/user/v1"
@@ -23,14 +21,7 @@ type httpController struct {
 
 func (c httpController) createUser(w http.ResponseWriter, r *http.Request) {
 	var input createUserRequest
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&input); err != nil {
-		http.Error(w, "invalid JSON body", http.StatusBadRequest)
-		return
-	}
-	var extra any
-	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
+	if err := json.UnmarshalRead(r.Body, &input, json.RejectUnknownMembers(true)); err != nil {
 		http.Error(w, "invalid JSON body", http.StatusBadRequest)
 		return
 	}

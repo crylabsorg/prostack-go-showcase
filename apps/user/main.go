@@ -19,10 +19,7 @@ func main() {
 func setup(ctx context.Context, cfg *config.Config, app *ps_bootstrap.App) error {
 	pool, disconnect := ps_pg.New(ctx, cfg.DatabaseURL)
 	app.Health.Probes["postgres"] = pool.Ping
-	go func() {
-		<-ctx.Done()
-		disconnect()
-	}()
+	defer disconnect()
 
 	r := user.NewRepository(pool)
 	m := user.NewMetrics(app.MetricsRegistry.Registry)
