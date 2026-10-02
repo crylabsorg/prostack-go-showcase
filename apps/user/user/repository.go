@@ -2,7 +2,7 @@ package user
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 
 	"github.com/crylabsorg/prostack-go-showcase/pkg/events"

@@ -2,7 +2,7 @@ package email
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"time"
 
@@ -25,13 +25,13 @@ func Run(ctx context.Context, client *nats.Conn, sender Sender) {
 
 func (c *natsController) run(ctx context.Context) {
 	for ctx.Err() == nil {
-		if err := c.consume(ctx); err != nil && ctx.Err() == nil {
+		if err := c.consume(ctx); err != nil {
 			logger.GetLogger(ctx).Error("email consumer", zap.Error(err))
 		}
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(5 * time.Second):
+		default:
 		}
 	}
 }
