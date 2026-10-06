@@ -30,7 +30,7 @@ func main() {
 	ps_bootstrap.Run(config.New, setup)
 }
 
-func setup(ctx context.Context, cfg *config.Config, app *ps_bootstrap.App) error {
+func setup(ctx context.Context, _ context.Context, cfg *config.Config, app *ps_bootstrap.App) error {
 	userConnection, err := ps_grpc.NewClientConn(ctx, cfg.UserGRPCAddr)
 	if err != nil {
 		return err
