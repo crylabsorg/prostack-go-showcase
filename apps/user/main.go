@@ -17,29 +17,31 @@ func main() {
 }
 
 func setup(ctx context.Context, cfg *config.Config, app *ps_bootstrap.App) error {
-	pool, disconnect := ps_pg.New(ctx, cfg.DatabaseURL)
-	app.Health.Probes["postgres"] = pool.Ping
-	defer disconnect()
+	databasePool, disconnectDatabase := ps_pg.New(ctx, cfg.DatabaseURL)
+	app.Health.Probes["postgres"] = databasePool.Ping
 
-	r := user.NewRepository(pool)
-	m := user.NewMetrics(app.MetricsRegistry.Registry)
-	s := user.NewService(r, m)
-	client, err := ps_nats.Connect(cfg.NATSURL)
+	userRepository := user.NewRepository(databasePool)
+	userMetrics := user.NewMetrics(app.MetricsRegistry.Registry)
+	userService := user.NewService(userRepository, userMetrics)
+	natsClient, err := ps_nats.Connect(cfg.NATSURL)
 	if err != nil {
+		disconnectDatabase()
 		return err
 	}
-	js, err := jetstream.New(client)
+	jetStream, err := jetstream.New(natsClient)
 	if err == nil {
-		err = ps_nats.EnsureStream(ctx, js, events.UserStream, "user.*")
+		err = ps_nats.EnsureStream(ctx, jetStream, events.UserStream, "user.*")
 	}
 	if err != nil {
-		client.Close()
+		natsClient.Close()
+		disconnectDatabase()
 		return err
 	}
 	go func() {
-		defer client.Close()
-		(&ps_nats.OutboxPublisher{JS: js, Outbox: r}).Run(ctx)
+		defer natsClient.Close()
+		defer disconnectDatabase()
+		(&ps_nats.OutboxPublisher{JS: jetStream, Outbox: userRepository}).Run(ctx)
 	}()
-	user.RegisterGRPC(app.GRPC.Server, s)
+	user.RegisterGRPC(app.GRPC.Server, userService)
 	return nil
 }

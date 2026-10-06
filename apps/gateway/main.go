@@ -32,16 +32,16 @@ func main() {
 }
 
 func setup(ctx context.Context, cfg *config.Config, app *ps_bootstrap.App) error {
-	conn, err := ps_grpc.NewClientConn(ctx, cfg.UserGRPCAddr)
+	userConnection, err := ps_grpc.NewClientConn(ctx, cfg.UserGRPCAddr)
 	if err != nil {
 		return err
 	}
 	go func() {
 		<-ctx.Done()
-		_ = conn.Close()
+		_ = userConnection.Close()
 	}()
 
-	user.RegisterHTTP(app.Mux, userv1.NewUserServiceClient(conn))
+	user.RegisterHTTP(app.Mux, userv1.NewUserServiceClient(userConnection))
 	app.Mux.HandleFunc("GET /", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("gateway"))
 	})
