@@ -11,7 +11,7 @@ import (
 
 func main() { ps_bootstrap.Run(config.New, setup) }
 
-func setup(ctx context.Context, cfg *config.Config, _ *ps_bootstrap.App) error {
+func setup(ctx context.Context, cfg *config.Config, app *ps_bootstrap.App) error {
 	emailSender, err := email.NewSender(cfg)
 	if err != nil {
 		return err
@@ -20,9 +20,12 @@ func setup(ctx context.Context, cfg *config.Config, _ *ps_bootstrap.App) error {
 	if err != nil {
 		return err
 	}
-	go func() {
-		defer natsClient.Close()
-		email.Run(ctx, natsClient, emailSender)
-	}()
+	app.RegisterCleanup(func() error {
+		natsClient.Close()
+		return nil
+	})
+
+	email.Run(ctx, natsClient, emailSender)
+
 	return nil
 }

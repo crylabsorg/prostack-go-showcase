@@ -20,7 +20,9 @@ type natsController struct {
 }
 
 func Run(ctx context.Context, client *nats.Conn, sender Sender) {
-	(&natsController{client: client, service: &service{sender: sender}}).run(ctx)
+	nc := &natsController{client: client, service: &service{sender: sender}}
+
+	go nc.run(ctx)
 }
 
 func (c *natsController) run(ctx context.Context) {

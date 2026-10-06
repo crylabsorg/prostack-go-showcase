@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/crylabsorg/prostack-go-showcase/gateway/config"
 	"github.com/crylabsorg/prostack-go-showcase/gateway/user"
@@ -36,14 +35,12 @@ func setup(ctx context.Context, cfg *config.Config, app *ps_bootstrap.App) error
 	if err != nil {
 		return err
 	}
-	go func() {
-		<-ctx.Done()
-		_ = userConnection.Close()
-	}()
-
-	user.RegisterHTTP(app.Mux, userv1.NewUserServiceClient(userConnection))
-	app.Mux.HandleFunc("GET /", func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte("gateway"))
+	app.RegisterCleanup(func() error {
+		return userConnection.Close()
 	})
+
+	mux := app.GetHTTPServeMux()
+	user.RegisterHTTP(mux, userv1.NewUserServiceClient(userConnection))
+
 	return nil
 }
