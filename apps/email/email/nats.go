@@ -15,31 +15,33 @@ import (
 )
 
 type natsController struct {
-	client  *nats.Conn
-	service *service
+	natsConn *nats.Conn
+	service  *service
 }
 
-func Run(ctx context.Context, client *nats.Conn, sender Sender) {
-	nc := &natsController{client: client, service: &service{sender: sender}}
+func Run(ctx context.Context, drainingCtx context.Context, natsConn *nats.Conn, sender Sender) {
+	nc := &natsController{natsConn: natsConn, service: &service{sender: sender}}
 
-	go nc.run(ctx)
+	go nc.run(ctx, drainingCtx)
 }
 
-func (c *natsController) run(ctx context.Context) {
-	for ctx.Err() == nil {
-		if err := c.consume(ctx); err != nil {
+func (c *natsController) run(ctx context.Context, drainingCtx context.Context) {
+	for {
+		if err := c.consume(ctx, drainingCtx); err != nil {
 			logger.GetLogger(ctx).Error("email consumer", zap.Error(err))
 		}
 		select {
 		case <-ctx.Done():
+			return
+		case <-drainingCtx.Done():
 			return
 		case <-time.After(5 * time.Second):
 		}
 	}
 }
 
-func (c *natsController) consume(ctx context.Context) error {
-	js, err := jetstream.New(c.client)
+func (c *natsController) consume(ctx context.Context, drainingCtx context.Context) error {
+	js, err := jetstream.New(c.natsConn)
 	if err != nil {
 		return err
 	}
@@ -50,7 +52,7 @@ func (c *natsController) consume(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return ps_nats.Consume(ctx, consumer, 50, c.handleMessage)
+	return ps_nats.Consume(ctx, drainingCtx, consumer, 50, c.handleMessage)
 }
 
 func (c *natsController) handleMessage(ctx context.Context, msg jetstream.Msg) error {

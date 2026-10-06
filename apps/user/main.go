@@ -27,15 +27,15 @@ func setup(ctx context.Context, cfg *config.Config, app *ps_bootstrap.App) error
 	userRepository := user.NewRepository(databasePool)
 	userMetrics := user.NewMetrics(app.GetMetricsRegistry())
 	userService := user.NewService(userRepository, userMetrics)
-	natsClient, err := ps_nats.Connect(cfg.NATSURL)
+	natsConn, err := ps_nats.Connect(cfg.NATSURL)
 	if err != nil {
 		return err
 	}
 	app.RegisterCleanup(func() error {
-		natsClient.Close()
+		natsConn.Close()
 		return nil
 	})
-	jetStream, err := jetstream.New(natsClient)
+	jetStream, err := jetstream.New(natsConn)
 	if err != nil {
 		return err
 	}
