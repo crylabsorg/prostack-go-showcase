@@ -42,9 +42,7 @@ func setup(ctx context.Context, _ context.Context, cfg *config.Config, app *ps_b
 	if err = ps_nats.EnsureStream(ctx, jetStream, events.UserStream, "user.*"); err != nil {
 		return err
 	}
-	go func() {
-		(&ps_nats.OutboxPublisher{JS: jetStream, Outbox: userRepository}).Run(ctx)
-	}()
+
 	user.RegisterGRPC(app.GetGRPCServer(), userService)
 	return nil
 }

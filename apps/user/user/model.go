@@ -6,6 +6,6 @@ type modelUser struct {
 	Email string
 }
 
-func (u modelUser) domain() User {
+func (u modelUser) toDomain() User {
 	return User{ID: u.ID, Name: u.Name, Email: u.Email}
 }

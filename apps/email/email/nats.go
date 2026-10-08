@@ -20,14 +20,17 @@ type natsController struct {
 }
 
 func Run(ctx context.Context, drainingCtx context.Context, natsConn *nats.Conn, sender Sender) {
-	nc := &natsController{natsConn: natsConn, service: &service{sender: sender}}
-
-	go nc.run(ctx, drainingCtx)
+	controller := &natsController{natsConn: natsConn, service: &service{sender: sender}}
+	go controller.run(ctx, drainingCtx)
 }
 
 func (c *natsController) run(ctx context.Context, drainingCtx context.Context) {
 	for {
-		if err := c.consume(ctx, drainingCtx); err != nil {
+		consumer, err := c.createConsumer(ctx)
+		if err == nil {
+			err = ps_nats.RunConsumer(ctx, drainingCtx, consumer, 50, c.handleMessage)
+		}
+		if err != nil {
 			logger.GetLogger(ctx).Error("email consumer", zap.Error(err))
 		}
 		select {
@@ -40,19 +43,16 @@ func (c *natsController) run(ctx context.Context, drainingCtx context.Context) {
 	}
 }
 
-func (c *natsController) consume(ctx context.Context, drainingCtx context.Context) error {
+func (c *natsController) createConsumer(ctx context.Context) (jetstream.Consumer, error) {
 	js, err := jetstream.New(c.natsConn)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	consumer, err := js.CreateOrUpdateConsumer(ctx, events.UserStream, jetstream.ConsumerConfig{
-		Durable: "email-sender", FilterSubject: events.UserCreatedSubject,
-		AckPolicy: jetstream.AckExplicitPolicy, AckWait: 30 * time.Second,
-	})
-	if err != nil {
-		return err
+	consumerCfg := jetstream.ConsumerConfig{
+		Durable:       "email-sender",
+		FilterSubject: events.UserCreatedSubject,
 	}
-	return ps_nats.Consume(ctx, drainingCtx, consumer, 50, c.handleMessage)
+	return js.CreateOrUpdateConsumer(ctx, events.UserStream, consumerCfg)
 }
 
 func (c *natsController) handleMessage(ctx context.Context, msg jetstream.Msg) error {
@@ -62,14 +62,14 @@ func (c *natsController) handleMessage(ctx context.Context, msg jetstream.Msg) e
 		if termErr := msg.Term(); termErr != nil {
 			err = errors.Join(err, termErr)
 		}
+		return err
+	}
+	err = c.service.sendWelcome(ctx, SendWelcomeInput{ID: event.ID, Name: event.Name, Email: event.Email})
+	if err == nil {
+		err = msg.DoubleAck(ctx)
 	} else {
-		err = c.service.sendWelcome(ctx, SendWelcomeInput{ID: event.ID, Name: event.Name, Email: event.Email})
-		if err == nil {
-			err = msg.DoubleAck(ctx)
-		} else {
-			if nakErr := msg.NakWithDelay(30 * time.Second); nakErr != nil {
-				err = errors.Join(err, nakErr)
-			}
+		if nakErr := msg.Nak(); nakErr != nil {
+			err = errors.Join(err, nakErr)
 		}
 	}
 	if err != nil {
