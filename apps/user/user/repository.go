@@ -3,13 +3,10 @@ package user
 import (
 	"context"
 	"errors"
-	"time"
 
-	"github.com/crylabsorg/prostack-go/logger"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.uber.org/zap"
 )
 
 // database is implemented by both the connection pool and a transaction.
@@ -52,20 +49,20 @@ func (r *Repository) WithinTransaction(ctx context.Context, fn func(*Repository)
 	if err != nil {
 		return err
 	}
-	defer rollbackTransaction(ctx, tx)
+	defer tx.Rollback(ctx)
 	if err := fn(&Repository{db: tx}); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
 }
 
-func (r *Repository) AppendOutbox(ctx context.Context, userID, subject string, payload []byte) error {
+func (r *Repository) CreateOutboxMessage(ctx context.Context, userID, subject string, payload []byte) error {
 	_, err := r.db.Exec(ctx, "INSERT INTO user_outbox (user_id, subject, payload) VALUES ($1, $2, $3)", userID, subject, payload)
 	return err
 }
 
-// PendingOutbox must run within WithinTransaction to keep rows locked until completion.
-func (r *Repository) PendingOutbox(ctx context.Context) ([]OutboxMessage, error) {
+// ListPendingOutboxMessages must run within WithinTransaction to keep rows locked until completion.
+func (r *Repository) ListPendingOutboxMessages(ctx context.Context) ([]OutboxMessage, error) {
 	const limit = 100
 	rows, err := r.db.Query(ctx, "SELECT id, subject, payload FROM user_outbox WHERE processed_at IS NULL ORDER BY id LIMIT $1 FOR UPDATE SKIP LOCKED", limit)
 	if err != nil {
@@ -86,15 +83,7 @@ func (r *Repository) PendingOutbox(ctx context.Context) ([]OutboxMessage, error)
 	return messages, nil
 }
 
-func (r *Repository) CompleteOutbox(ctx context.Context, ids []string) error {
+func (r *Repository) CompleteOutboxMessages(ctx context.Context, ids []string) error {
 	_, err := r.db.Exec(ctx, "UPDATE user_outbox SET processed_at = now() WHERE id = ANY($1::uuid[])", ids)
 	return err
-}
-
-func rollbackTransaction(ctx context.Context, tx pgx.Tx) {
-	cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-	defer cancel()
-	if err := tx.Rollback(cleanupCtx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-		logger.GetLogger(ctx).Error("rollback user transaction", zap.Error(err))
-	}
 }

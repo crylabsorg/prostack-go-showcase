@@ -13,7 +13,7 @@ var _ ps_nats.Outbox = (*Outbox)(nil)
 func NewOutbox(service *Service) *Outbox { return &Outbox{service: service} }
 
 func (o *Outbox) ProcessOutboxBatch(ctx context.Context, publish func([]ps_nats.OutboxMessage) []ps_nats.OutboxMessagePublishResult) error {
-	return o.service.ProcessOutboxBatch(ctx, func(messages []OutboxMessage) []OutboxPublishResult {
+	return o.service.processOutboxBatch(ctx, func(messages []OutboxMessage) []OutboxPublishResult {
 		natsMessages := make([]ps_nats.OutboxMessage, len(messages))
 		for i, message := range messages {
 			natsMessages[i] = message
