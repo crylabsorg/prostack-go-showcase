@@ -8,8 +8,9 @@ service UserService {
 }
 
 message CreateUserRequest {
-  string name = 1;
+  string first_name = 1;
   string email = 2;
+  string last_name = 3;
 }
 
 message GetUserRequest {
@@ -26,6 +27,7 @@ message GetUserResponse {
 
 message User {
   string id = 1;
-  string name = 2;
+  string first_name = 2;
   string email = 3;
+  string last_name = 4;
 }

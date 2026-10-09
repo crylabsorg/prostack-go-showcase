@@ -22,8 +22,9 @@ const (
 
 type CreateUserRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Name        *string                `protobuf:"bytes,1,opt,name=name"`
+	xxx_hidden_FirstName   *string                `protobuf:"bytes,1,opt,name=first_name,json=firstName"`
 	xxx_hidden_Email       *string                `protobuf:"bytes,2,opt,name=email"`
+	xxx_hidden_LastName    *string                `protobuf:"bytes,3,opt,name=last_name,json=lastName"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -55,10 +56,10 @@ func (x *CreateUserRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *CreateUserRequest) GetName() string {
+func (x *CreateUserRequest) GetFirstName() string {
 	if x != nil {
-		if x.xxx_hidden_Name != nil {
-			return *x.xxx_hidden_Name
+		if x.xxx_hidden_FirstName != nil {
+			return *x.xxx_hidden_FirstName
 		}
 		return ""
 	}
@@ -75,17 +76,32 @@ func (x *CreateUserRequest) GetEmail() string {
 	return ""
 }
 
-func (x *CreateUserRequest) SetName(v string) {
-	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
+func (x *CreateUserRequest) GetLastName() string {
+	if x != nil {
+		if x.xxx_hidden_LastName != nil {
+			return *x.xxx_hidden_LastName
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *CreateUserRequest) SetFirstName(v string) {
+	x.xxx_hidden_FirstName = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
 }
 
 func (x *CreateUserRequest) SetEmail(v string) {
 	x.xxx_hidden_Email = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
 }
 
-func (x *CreateUserRequest) HasName() bool {
+func (x *CreateUserRequest) SetLastName(v string) {
+	x.xxx_hidden_LastName = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+}
+
+func (x *CreateUserRequest) HasFirstName() bool {
 	if x == nil {
 		return false
 	}
@@ -99,9 +115,16 @@ func (x *CreateUserRequest) HasEmail() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
 }
 
-func (x *CreateUserRequest) ClearName() {
+func (x *CreateUserRequest) HasLastName() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *CreateUserRequest) ClearFirstName() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Name = nil
+	x.xxx_hidden_FirstName = nil
 }
 
 func (x *CreateUserRequest) ClearEmail() {
@@ -109,24 +132,34 @@ func (x *CreateUserRequest) ClearEmail() {
 	x.xxx_hidden_Email = nil
 }
 
+func (x *CreateUserRequest) ClearLastName() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_LastName = nil
+}
+
 type CreateUserRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Name  *string
-	Email *string
+	FirstName *string
+	Email     *string
+	LastName  *string
 }
 
 func (b0 CreateUserRequest_builder) Build() *CreateUserRequest {
 	m0 := &CreateUserRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
-	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
-		x.xxx_hidden_Name = b.Name
+	if b.FirstName != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 3)
+		x.xxx_hidden_FirstName = b.FirstName
 	}
 	if b.Email != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
 		x.xxx_hidden_Email = b.Email
+	}
+	if b.LastName != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		x.xxx_hidden_LastName = b.LastName
 	}
 	return m0
 }
@@ -348,8 +381,9 @@ func (b0 GetUserResponse_builder) Build() *GetUserResponse {
 type User struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          *string                `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Name        *string                `protobuf:"bytes,2,opt,name=name"`
+	xxx_hidden_FirstName   *string                `protobuf:"bytes,2,opt,name=first_name,json=firstName"`
 	xxx_hidden_Email       *string                `protobuf:"bytes,3,opt,name=email"`
+	xxx_hidden_LastName    *string                `protobuf:"bytes,4,opt,name=last_name,json=lastName"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -391,10 +425,10 @@ func (x *User) GetId() string {
 	return ""
 }
 
-func (x *User) GetName() string {
+func (x *User) GetFirstName() string {
 	if x != nil {
-		if x.xxx_hidden_Name != nil {
-			return *x.xxx_hidden_Name
+		if x.xxx_hidden_FirstName != nil {
+			return *x.xxx_hidden_FirstName
 		}
 		return ""
 	}
@@ -411,19 +445,34 @@ func (x *User) GetEmail() string {
 	return ""
 }
 
-func (x *User) SetId(v string) {
-	x.xxx_hidden_Id = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
+func (x *User) GetLastName() string {
+	if x != nil {
+		if x.xxx_hidden_LastName != nil {
+			return *x.xxx_hidden_LastName
+		}
+		return ""
+	}
+	return ""
 }
 
-func (x *User) SetName(v string) {
-	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
+func (x *User) SetId(v string) {
+	x.xxx_hidden_Id = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 4)
+}
+
+func (x *User) SetFirstName(v string) {
+	x.xxx_hidden_FirstName = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
 }
 
 func (x *User) SetEmail(v string) {
 	x.xxx_hidden_Email = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *User) SetLastName(v string) {
+	x.xxx_hidden_LastName = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
 }
 
 func (x *User) HasId() bool {
@@ -433,7 +482,7 @@ func (x *User) HasId() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
-func (x *User) HasName() bool {
+func (x *User) HasFirstName() bool {
 	if x == nil {
 		return false
 	}
@@ -447,14 +496,21 @@ func (x *User) HasEmail() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
+func (x *User) HasLastName() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
 func (x *User) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
 }
 
-func (x *User) ClearName() {
+func (x *User) ClearFirstName() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
-	x.xxx_hidden_Name = nil
+	x.xxx_hidden_FirstName = nil
 }
 
 func (x *User) ClearEmail() {
@@ -462,12 +518,18 @@ func (x *User) ClearEmail() {
 	x.xxx_hidden_Email = nil
 }
 
+func (x *User) ClearLastName() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_LastName = nil
+}
+
 type User_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Id    *string
-	Name  *string
-	Email *string
+	Id        *string
+	FirstName *string
+	Email     *string
+	LastName  *string
 }
 
 func (b0 User_builder) Build() *User {
@@ -475,16 +537,20 @@ func (b0 User_builder) Build() *User {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 3)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 4)
 		x.xxx_hidden_Id = b.Id
 	}
-	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
-		x.xxx_hidden_Name = b.Name
+	if b.FirstName != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
+		x.xxx_hidden_FirstName = b.FirstName
 	}
 	if b.Email != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
 		x.xxx_hidden_Email = b.Email
+	}
+	if b.LastName != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		x.xxx_hidden_LastName = b.LastName
 	}
 	return m0
 }
@@ -493,20 +559,24 @@ var File_user_v1_user_proto protoreflect.FileDescriptor
 
 const file_user_v1_user_proto_rawDesc = "" +
 	"\n" +
-	"\x12user/v1/user.proto\x12\auser.v1\"=\n" +
-	"\x11CreateUserRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\" \n" +
+	"\x12user/v1/user.proto\x12\auser.v1\"e\n" +
+	"\x11CreateUserRequest\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\x01 \x01(\tR\tfirstName\x12\x14\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1b\n" +
+	"\tlast_name\x18\x03 \x01(\tR\blastName\" \n" +
 	"\x0eGetUserRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"7\n" +
 	"\x12CreateUserResponse\x12!\n" +
 	"\x04user\x18\x01 \x01(\v2\r.user.v1.UserR\x04user\"4\n" +
 	"\x0fGetUserResponse\x12!\n" +
-	"\x04user\x18\x01 \x01(\v2\r.user.v1.UserR\x04user\"@\n" +
+	"\x04user\x18\x01 \x01(\v2\r.user.v1.UserR\x04user\"h\n" +
 	"\x04User\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
-	"\x05email\x18\x03 \x01(\tR\x05email2\x92\x01\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\x02 \x01(\tR\tfirstName\x12\x14\n" +
+	"\x05email\x18\x03 \x01(\tR\x05email\x12\x1b\n" +
+	"\tlast_name\x18\x04 \x01(\tR\blastName2\x92\x01\n" +
 	"\vUserService\x12E\n" +
 	"\n" +
 	"CreateUser\x12\x1a.user.v1.CreateUserRequest\x1a\x1b.user.v1.CreateUserResponse\x12<\n" +

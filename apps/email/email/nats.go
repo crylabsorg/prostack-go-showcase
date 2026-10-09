@@ -64,7 +64,7 @@ func (c *natsController) handleMessage(ctx context.Context, msg jetstream.Msg) e
 		}
 		return err
 	}
-	err = c.service.sendWelcome(ctx, SendWelcomeInput{ID: event.ID, Name: event.Name, Email: event.Email})
+	err = c.service.sendWelcome(ctx, SendWelcomeInput{ID: event.ID, FirstName: event.FirstName, LastName: event.LastName, Email: event.Email})
 	if err == nil {
 		err = msg.DoubleAck(ctx)
 	} else {

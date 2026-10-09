@@ -2,10 +2,14 @@ package user
 
 import (
 	"context"
+	"encoding/json/v2"
 	"net/mail"
 	"strings"
 
+	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
+	"github.com/crylabsorg/prostack-go/logger"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type Service struct {
@@ -13,23 +17,60 @@ type Service struct {
 	metrics    *Metrics
 }
 
-func NewService(r *Repository, m *Metrics) *Service {
-	return &Service{repository: r, metrics: m}
+func NewService(repository *Repository, metrics *Metrics) *Service {
+	return &Service{repository: repository, metrics: metrics}
 }
 
-func (s *Service) Create(ctx context.Context, name, email string) (User, error) {
-	name = strings.TrimSpace(name)
+func (s *Service) Create(ctx context.Context, firstName, lastName, email string) (User, error) {
+	firstName = strings.TrimSpace(firstName)
+	lastName = strings.TrimSpace(lastName)
 	email = strings.TrimSpace(email)
 	address, err := mail.ParseAddress(email)
-	if name == "" || err != nil || address.Address != email {
+	if firstName == "" || err != nil || address.Address != email {
 		return User{}, ErrInvalidInput
 	}
-	user := User{ID: uuid.NewString(), Name: name, Email: email}
-	if err := s.repository.Create(ctx, user); err != nil {
+	user := User{ID: uuid.NewString(), FirstName: firstName, LastName: lastName, Email: email}
+	payload, err := json.Marshal(user.ToCreatedEvent())
+	if err != nil {
+		return User{}, err
+	}
+	if err := s.repository.WithinTransaction(ctx, func(repository *Repository) error {
+		if err := repository.Create(ctx, user); err != nil {
+			return err
+		}
+		return repository.AppendOutbox(ctx, user.ID, events.UserCreatedSubject, payload)
+	}); err != nil {
 		return User{}, err
 	}
 	s.metrics.Created.Inc()
 	return user, nil
+}
+
+// ProcessOutboxBatch keeps messages reserved until publication and completion.
+// Only acknowledged messages are completed; failed messages remain pending.
+func (s *Service) ProcessOutboxBatch(ctx context.Context, publish func([]OutboxMessage) []OutboxPublishResult) error {
+	return s.repository.WithinTransaction(ctx, func(repository *Repository) error {
+		messages, err := repository.PendingOutbox(ctx)
+		if err != nil {
+			return err
+		}
+		if len(messages) == 0 {
+			return nil
+		}
+		results := publish(messages)
+		acknowledgedIDs := make([]string, 0, len(results))
+		for _, result := range results {
+			if result.Err == nil {
+				acknowledgedIDs = append(acknowledgedIDs, result.ID)
+			} else {
+				logger.GetLogger(ctx).Warn("message is not published", zap.Error(result.Err), zap.String("id", result.ID))
+			}
+		}
+		if len(acknowledgedIDs) == 0 {
+			return nil
+		}
+		return repository.CompleteOutbox(ctx, acknowledgedIDs)
+	})
 }
 
 func (s *Service) Get(ctx context.Context, id string) (User, error) {

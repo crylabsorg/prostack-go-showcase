@@ -22,7 +22,8 @@ func (client *testUserClient) CreateUser(_ context.Context, request *userv1.Crea
 	client.createRequest = request
 	user := &userv1.User{}
 	user.SetId("user-id")
-	user.SetName(request.GetName())
+	user.SetFirstName(request.GetFirstName())
+	user.SetLastName(request.GetLastName())
 	user.SetEmail(request.GetEmail())
 	response := &userv1.CreateUserResponse{}
 	response.SetUser(user)
@@ -44,11 +45,12 @@ func TestUserRoutes(t *testing.T) {
 	RegisterHTTP(mux, client)
 
 	create := httptest.NewRecorder()
-	mux.ServeHTTP(create, httptest.NewRequest(http.MethodPost, "/v1/users", strings.NewReader(`{"name":"Ada","email":"ada@example.com"}`)))
+	mux.ServeHTTP(create, httptest.NewRequest(http.MethodPost, "/v1/users", strings.NewReader(`{"first_name":"Ada","last_name":"Lovelace","email":"ada@example.com"}`)))
 	require.Equal(t, http.StatusCreated, create.Code)
-	require.Equal(t, "Ada", client.createRequest.GetName())
+	require.Equal(t, "Ada", client.createRequest.GetFirstName())
+	require.Equal(t, "Lovelace", client.createRequest.GetLastName())
 	require.Equal(t, "ada@example.com", client.createRequest.GetEmail())
-	require.JSONEq(t, `{"id":"user-id","name":"Ada","email":"ada@example.com"}`, create.Body.String())
+	require.JSONEq(t, `{"id":"user-id","first_name":"Ada","last_name":"Lovelace","email":"ada@example.com"}`, create.Body.String())
 
 	get := httptest.NewRecorder()
 	mux.ServeHTTP(get, httptest.NewRequest(http.MethodGet, "/v1/users/user-id", nil))
@@ -56,6 +58,6 @@ func TestUserRoutes(t *testing.T) {
 	require.Equal(t, "user-id", client.getRequest.GetId())
 
 	invalid := httptest.NewRecorder()
-	mux.ServeHTTP(invalid, httptest.NewRequest(http.MethodPost, "/v1/users", strings.NewReader(`{"name":"Ada"}{}`)))
+	mux.ServeHTTP(invalid, httptest.NewRequest(http.MethodPost, "/v1/users", strings.NewReader(`{"first_name":"Ada","last_name":"Lovelace"}{}`)))
 	require.Equal(t, http.StatusBadRequest, invalid.Code)
 }

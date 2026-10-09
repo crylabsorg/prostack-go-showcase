@@ -17,7 +17,7 @@ func RegisterGRPC(grpcServer *grpc.Server, svc *Service) {
 }
 
 func (s *server) CreateUser(ctx context.Context, req *userv1.CreateUserRequest) (*userv1.CreateUserResponse, error) {
-	user, err := s.service.Create(ctx, req.GetName(), req.GetEmail())
+	user, err := s.service.Create(ctx, req.GetFirstName(), req.GetLastName(), req.GetEmail())
 	if err != nil {
 		return nil, err
 	}

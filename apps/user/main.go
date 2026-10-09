@@ -16,7 +16,7 @@ func main() {
 	ps_bootstrap.Run(config.New, setup)
 }
 
-func setup(ctx context.Context, _ context.Context, cfg *config.Config, app *ps_bootstrap.App) error {
+func setup(ctx context.Context, drainingCtx context.Context, cfg *config.Config, app *ps_bootstrap.App) error {
 	databasePool, disconnectDatabase := ps_pg.New(ctx, cfg.DatabaseURL)
 	app.RegisterCleanup(func() error {
 		disconnectDatabase()
@@ -42,6 +42,8 @@ func setup(ctx context.Context, _ context.Context, cfg *config.Config, app *ps_b
 	if err = ps_nats.EnsureStream(ctx, jetStream, events.UserStream, "user.*"); err != nil {
 		return err
 	}
+
+	ps_nats.RunOutboxPublisher(ctx, drainingCtx, jetStream, user.NewOutbox(userService))
 
 	user.RegisterGRPC(app.GetGRPCServer(), userService)
 	return nil
