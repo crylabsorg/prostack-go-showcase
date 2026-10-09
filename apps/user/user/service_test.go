@@ -17,12 +17,17 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func TestServiceCreate(t *testing.T) {
-	ctx := context.Background()
+	traceState, err := trace.ParseTraceState("vendor=value")
+	require.NoError(t, err)
+	requestSpan := trace.NewSpanContext(trace.SpanContextConfig{TraceID: trace.TraceID{1}, SpanID: trace.SpanID{2}, TraceFlags: trace.FlagsSampled, TraceState: traceState})
+	ctx := trace.ContextWithSpanContext(context.Background(), requestSpan)
 	pool := ps_test.NewPostgresContainer(t, filepath.Join("..", "schema.sql"))
 	repository := NewRepository(pool)
 	metrics := NewMetrics(prometheus.NewRegistry())
@@ -43,6 +48,16 @@ func TestServiceCreate(t *testing.T) {
 	var event events.UserCreatedEvent
 	require.NoError(t, json.Unmarshal(payload, &event))
 	require.Equal(t, created.ToCreatedEvent(), event)
+	require.NoError(t, repository.WithinTransaction(context.Background(), func(repository *Repository) error {
+		messages, err := repository.ListPendingOutboxMessages(context.Background())
+		require.NoError(t, err)
+		require.Len(t, messages, 1)
+		restored := propagation.TraceContext{}.Extract(context.Background(), propagation.MapCarrier(messages[0].TraceContext()))
+		require.Equal(t, requestSpan.TraceID(), trace.SpanContextFromContext(restored).TraceID())
+		require.Equal(t, requestSpan.SpanID(), trace.SpanContextFromContext(restored).SpanID())
+		require.Equal(t, requestSpan.TraceState().String(), trace.SpanContextFromContext(restored).TraceState().String())
+		return nil
+	}))
 	var metric io_prometheus_client.Metric
 	require.NoError(t, metrics.Created.Write(&metric))
 	require.Equal(t, float64(1), metric.GetCounter().GetValue())

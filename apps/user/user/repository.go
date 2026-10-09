@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 // database is implemented by both the connection pool and a transaction.
@@ -57,14 +58,16 @@ func (r *Repository) WithinTransaction(ctx context.Context, fn func(*Repository)
 }
 
 func (r *Repository) CreateOutboxMessage(ctx context.Context, userID, subject string, payload []byte) error {
-	_, err := r.db.Exec(ctx, "INSERT INTO user_outbox (user_id, subject, payload) VALUES ($1, $2, $3)", userID, subject, payload)
+	carrier := propagation.MapCarrier{}
+	propagation.TraceContext{}.Inject(ctx, carrier)
+	_, err := r.db.Exec(ctx, "INSERT INTO user_outbox (user_id, subject, payload, trace_context) VALUES ($1, $2, $3, $4)", userID, subject, payload, map[string]string(carrier))
 	return err
 }
 
 // ListPendingOutboxMessages must run within WithinTransaction to keep rows locked until completion.
 func (r *Repository) ListPendingOutboxMessages(ctx context.Context) ([]OutboxMessage, error) {
 	const limit = 100
-	rows, err := r.db.Query(ctx, "SELECT id, subject, payload FROM user_outbox WHERE processed_at IS NULL ORDER BY id LIMIT $1 FOR UPDATE SKIP LOCKED", limit)
+	rows, err := r.db.Query(ctx, "SELECT id, subject, payload, trace_context FROM user_outbox WHERE processed_at IS NULL ORDER BY id LIMIT $1 FOR UPDATE SKIP LOCKED", limit)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +75,7 @@ func (r *Repository) ListPendingOutboxMessages(ctx context.Context) ([]OutboxMes
 	messages := make([]OutboxMessage, 0, limit)
 	for rows.Next() {
 		var message OutboxMessage
-		if err := rows.Scan(&message.id, &message.subject, &message.payload); err != nil {
+		if err := rows.Scan(&message.id, &message.subject, &message.payload, &message.traceContext); err != nil {
 			return nil, err
 		}
 		messages = append(messages, message)

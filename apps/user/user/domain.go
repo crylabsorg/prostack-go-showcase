@@ -26,9 +26,10 @@ func (user User) ToProto() *userv1.User {
 }
 
 type OutboxMessage struct {
-	id      string
-	subject string
-	payload []byte
+	id           string
+	subject      string
+	payload      []byte
+	traceContext map[string]string
 }
 
 func (message OutboxMessage) ID() string { return message.id }
@@ -36,6 +37,8 @@ func (message OutboxMessage) ID() string { return message.id }
 func (message OutboxMessage) Subject() string { return message.subject }
 
 func (message OutboxMessage) Payload() []byte { return message.payload }
+
+func (message OutboxMessage) TraceContext() map[string]string { return message.traceContext }
 
 type OutboxPublishResult struct {
 	ID  string

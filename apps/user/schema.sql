@@ -10,6 +10,7 @@ CREATE TABLE user_outbox (
     user_id uuid NOT NULL REFERENCES users(id),
     subject text NOT NULL,
     payload jsonb NOT NULL,
+    trace_context jsonb NOT NULL DEFAULT '{}'::jsonb,
     processed_at timestamptz
 );
 
