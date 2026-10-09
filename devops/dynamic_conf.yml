@@ -5,14 +5,14 @@ http:
       service: api@internal
       entryPoints:
         - websecure
-        - limit-api-body
       tls: {}
+      middlewares:
+        - limit-api-body
     gateway:
       rule: Host(`api.prostack.io`)
       service: gateway
       entryPoints:
         - websecure
-        - limit-api-body
       tls: {}
       middlewares:
         - cors-api
@@ -22,15 +22,17 @@ http:
       service: frontend
       entryPoints:
         - websecure
-        - limit-api-body
       tls: {}
+      middlewares:
+        - limit-api-body
     grafana:
       rule: Host(`grafana.prostack.io`)
       service: grafana
       entryPoints:
         - websecure
-        - limit-api-body
       tls: {}
+      middlewares:
+        - limit-api-body
 
   middlewares:
     limit-api-body:
