@@ -16,6 +16,10 @@ func setup(ctx context.Context, drainingCtx context.Context, cfg *config.Config,
 	if err != nil {
 		return err
 	}
+	if cfg.EventBroker == "kafka" {
+		email.RunKafka(ctx, drainingCtx, cfg.KafkaBrokers, emailSender)
+		return nil
+	}
 	natsConn, err := ps_nats.Connect(cfg.NATSURL)
 	if err != nil {
 		return err

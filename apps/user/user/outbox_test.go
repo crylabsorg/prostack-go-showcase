@@ -9,11 +9,14 @@ import (
 	"time"
 
 	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
+	"github.com/crylabsorg/prostack-go/ps_event"
+	"github.com/crylabsorg/prostack-go/ps_kafka"
 	"github.com/crylabsorg/prostack-go/ps_nats"
 	"github.com/crylabsorg/prostack-go/ps_test"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 func TestOutboxAdapter(t *testing.T) {
@@ -38,17 +41,17 @@ func TestOutboxAdapter(t *testing.T) {
 
 	t.Run("locks and partial success", func(t *testing.T) {
 		publishErr := errors.New("NATS rejected message")
-		err := outbox.ProcessOutboxBatch(ctx, func(messages []ps_nats.OutboxMessage) []ps_nats.OutboxMessagePublishResult {
+		err := outbox.ProcessOutboxBatch(ctx, func(messages []ps_event.OutboxMessage) []ps_event.OutboxMessagePublishResult {
 			require.Len(t, messages, 2)
 			// A second worker must not publish rows already reserved by this batch.
-			err := outbox.ProcessOutboxBatch(ctx, func([]ps_nats.OutboxMessage) []ps_nats.OutboxMessagePublishResult {
+			err := outbox.ProcessOutboxBatch(ctx, func([]ps_event.OutboxMessage) []ps_event.OutboxMessagePublishResult {
 				t.Error("locked messages were reserved twice")
 				return nil
 			})
 			require.NoError(t, err)
-			results := make([]ps_nats.OutboxMessagePublishResult, 0, len(messages))
+			results := make([]ps_event.OutboxMessagePublishResult, 0, len(messages))
 			for _, message := range messages {
-				result := ps_nats.OutboxMessagePublishResult{OutboxMessage: message}
+				result := ps_event.OutboxMessagePublishResult{OutboxMessage: message}
 				if message.ID() == secondEventID {
 					result.Err = publishErr
 				}
@@ -57,10 +60,10 @@ func TestOutboxAdapter(t *testing.T) {
 			return results
 		})
 		require.NoError(t, err)
-		err = outbox.ProcessOutboxBatch(ctx, func(messages []ps_nats.OutboxMessage) []ps_nats.OutboxMessagePublishResult {
+		err = outbox.ProcessOutboxBatch(ctx, func(messages []ps_event.OutboxMessage) []ps_event.OutboxMessagePublishResult {
 			require.Len(t, messages, 1)
 			require.Equal(t, secondEventID, messages[0].ID())
-			return []ps_nats.OutboxMessagePublishResult{{OutboxMessage: messages[0], Err: publishErr}}
+			return []ps_event.OutboxMessagePublishResult{{OutboxMessage: messages[0], Err: publishErr}}
 		})
 		require.NoError(t, err)
 		var total, processed int
@@ -70,18 +73,18 @@ func TestOutboxAdapter(t *testing.T) {
 	})
 
 	t.Run("events created during publication stay pending for the next batch", func(t *testing.T) {
-		err := outbox.ProcessOutboxBatch(ctx, func(messages []ps_nats.OutboxMessage) []ps_nats.OutboxMessagePublishResult {
+		err := outbox.ProcessOutboxBatch(ctx, func(messages []ps_event.OutboxMessage) []ps_event.OutboxMessagePublishResult {
 			require.Len(t, messages, 1)
 			_, err := service.Create(ctx, "Later", "", "later@example.com")
 			require.NoError(t, err)
-			return []ps_nats.OutboxMessagePublishResult{{OutboxMessage: messages[0], Err: errors.New("retry later")}}
+			return []ps_event.OutboxMessagePublishResult{{OutboxMessage: messages[0], Err: errors.New("retry later")}}
 		})
 		require.NoError(t, err)
-		err = outbox.ProcessOutboxBatch(ctx, func(messages []ps_nats.OutboxMessage) []ps_nats.OutboxMessagePublishResult {
+		err = outbox.ProcessOutboxBatch(ctx, func(messages []ps_event.OutboxMessage) []ps_event.OutboxMessagePublishResult {
 			require.Len(t, messages, 2)
-			results := make([]ps_nats.OutboxMessagePublishResult, 0, len(messages))
+			results := make([]ps_event.OutboxMessagePublishResult, 0, len(messages))
 			for _, message := range messages {
-				result := ps_nats.OutboxMessagePublishResult{OutboxMessage: message}
+				result := ps_event.OutboxMessagePublishResult{OutboxMessage: message}
 				if message.ID() == secondEventID {
 					result.Err = errors.New("retry later")
 				}
@@ -95,33 +98,33 @@ func TestOutboxAdapter(t *testing.T) {
 	t.Run("cancellation releases reservation", func(t *testing.T) {
 		batchCtx, cancel := context.WithCancel(ctx)
 		defer cancel()
-		err := outbox.ProcessOutboxBatch(batchCtx, func(messages []ps_nats.OutboxMessage) []ps_nats.OutboxMessagePublishResult {
+		err := outbox.ProcessOutboxBatch(batchCtx, func(messages []ps_event.OutboxMessage) []ps_event.OutboxMessagePublishResult {
 			require.Len(t, messages, 1)
 			require.Equal(t, secondEventID, messages[0].ID())
 			cancel()
-			return []ps_nats.OutboxMessagePublishResult{{OutboxMessage: messages[0]}}
+			return []ps_event.OutboxMessagePublishResult{{OutboxMessage: messages[0]}}
 		})
 		require.ErrorIs(t, err, context.Canceled)
-		err = outbox.ProcessOutboxBatch(ctx, func(messages []ps_nats.OutboxMessage) []ps_nats.OutboxMessagePublishResult {
+		err = outbox.ProcessOutboxBatch(ctx, func(messages []ps_event.OutboxMessage) []ps_event.OutboxMessagePublishResult {
 			require.Len(t, messages, 1)
-			return []ps_nats.OutboxMessagePublishResult{{OutboxMessage: messages[0], Err: errors.New("retry later")}}
+			return []ps_event.OutboxMessagePublishResult{{OutboxMessage: messages[0], Err: errors.New("retry later")}}
 		})
 		require.NoError(t, err)
 	})
 
 	t.Run("panic releases reservation", func(t *testing.T) {
 		require.Panics(t, func() {
-			err := outbox.ProcessOutboxBatch(ctx, func([]ps_nats.OutboxMessage) []ps_nats.OutboxMessagePublishResult { panic("publish panic") })
+			err := outbox.ProcessOutboxBatch(ctx, func([]ps_event.OutboxMessage) []ps_event.OutboxMessagePublishResult { panic("publish panic") })
 			require.NoError(t, err)
 		})
-		err := outbox.ProcessOutboxBatch(ctx, func(messages []ps_nats.OutboxMessage) []ps_nats.OutboxMessagePublishResult {
+		err := outbox.ProcessOutboxBatch(ctx, func(messages []ps_event.OutboxMessage) []ps_event.OutboxMessagePublishResult {
 			require.Len(t, messages, 1)
-			return []ps_nats.OutboxMessagePublishResult{{OutboxMessage: messages[0], Err: errors.New("retry later")}}
+			return []ps_event.OutboxMessagePublishResult{{OutboxMessage: messages[0], Err: errors.New("retry later")}}
 		})
 		require.NoError(t, err)
 	})
 
-	t.Run("publishes to JetStream and retains processed events", func(t *testing.T) {
+	t.Run("publishes to both brokers and retains processed events", func(t *testing.T) {
 		client, err := ps_nats.Connect(ps_test.NewNATSContainer(t))
 		require.NoError(t, err)
 		defer client.Close()
@@ -131,8 +134,12 @@ func TestOutboxAdapter(t *testing.T) {
 		consumer, err := js.CreateConsumer(ctx, events.UserStream, jetstream.ConsumerConfig{FilterSubject: events.UserCreatedSubject, AckPolicy: jetstream.AckExplicitPolicy})
 		require.NoError(t, err)
 		drainingCtx, drain := context.WithCancel(ctx)
-		ps_nats.RunOutboxPublisher(ctx, drainingCtx, js, outbox)
-		defer drain()
+		kafkaBrokers := ps_test.NewKafkaContainer(t)
+		kafkaPublisher, err := ps_kafka.NewPublisher(kafkaBrokers...)
+		require.NoError(t, err)
+		defer kafkaPublisher.Close()
+		publisherDone := ps_event.RunOutboxPublisher(ctx, drainingCtx, ps_event.Fanout{ps_nats.NewPublisher(js), kafkaPublisher}, outbox)
+		defer func() { drain(); <-publisherDone }()
 		require.Eventually(t, func() bool {
 			var count int
 			err := pool.QueryRow(ctx, "SELECT count(*) FROM user_outbox WHERE processed_at IS NULL").Scan(&count)
@@ -146,11 +153,24 @@ func TestOutboxAdapter(t *testing.T) {
 		require.Equal(t, second.ToCreatedEvent(), event)
 		require.Equal(t, secondEventID, msg.Headers().Get("Nats-Msg-Id"))
 		require.NoError(t, msg.DoubleAck(ctx))
+		consumeCtx, cancelConsume := context.WithTimeout(ctx, 20*time.Second)
+		defer cancelConsume()
+		kafkaDrainCtx, drainKafka := context.WithCancel(consumeCtx)
+		defer drainKafka()
+		require.NoError(t, ps_kafka.RunConsumer(consumeCtx, kafkaDrainCtx, kafkaBrokers, events.UserCreatedSubject, "outbox-test", func(ctx context.Context, record *kgo.Record) error {
+			var kafkaEvent events.UserCreatedEvent
+			require.NoError(t, json.Unmarshal(record.Value, &kafkaEvent))
+			require.Equal(t, second.ToCreatedEvent(), kafkaEvent)
+			require.Equal(t, secondEventID, string(record.Key))
+			drainKafka()
+			return nil
+		}))
+		require.NoError(t, consumeCtx.Err(), "Kafka event was not delivered")
 		var total, processed int
 		require.NoError(t, pool.QueryRow(ctx, "SELECT count(*), count(processed_at) FROM user_outbox").Scan(&total, &processed))
 		require.Equal(t, 3, total)
 		require.Equal(t, total, processed)
-		err = outbox.ProcessOutboxBatch(ctx, func([]ps_nats.OutboxMessage) []ps_nats.OutboxMessagePublishResult {
+		err = outbox.ProcessOutboxBatch(ctx, func([]ps_event.OutboxMessage) []ps_event.OutboxMessagePublishResult {
 			t.Error("processed messages were selected again")
 			return nil
 		})

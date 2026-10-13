@@ -11,6 +11,7 @@ import (
 	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
 	"github.com/crylabsorg/prostack-go/ps_test"
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,24 +32,24 @@ func TestRepositoryCreate(t *testing.T) {
 
 func TestRepositoryOutboxMigration(t *testing.T) {
 	ctx := context.Background()
-	var legacySchema []byte
-	for _, filename := range []string{"20260929024205.sql", "20260929031719.sql", "20260929090000.sql"} {
-		migration, err := os.ReadFile(filepath.Join("..", "migrations", filename))
+	migrationPaths, err := filepath.Glob(filepath.Join("..", "migrations", "*.sql"))
+	require.NoError(t, err)
+	require.NotEmpty(t, migrationPaths)
+	var schema []byte
+	for _, path := range migrationPaths {
+		migration, err := os.ReadFile(path)
 		require.NoError(t, err)
-		legacySchema = append(legacySchema, migration...)
+		schema = append(schema, migration...)
+		schema = append(schema, '\n')
 	}
-	schemaPath := filepath.Join(t.TempDir(), "legacy.sql")
-	require.NoError(t, os.WriteFile(schemaPath, legacySchema, 0600))
+	schemaPath := filepath.Join(t.TempDir(), "migrations.sql")
+	require.NoError(t, os.WriteFile(schemaPath, schema, 0600))
 	pool := ps_test.NewPostgresContainer(t, schemaPath)
-	userID := uuid.NewString()
-	_, err := pool.Exec(ctx, "INSERT INTO users (id, first_name, email) VALUES ($1, 'Ada', 'ada@example.com')", userID)
+	repository := NewRepository(pool)
+	service := NewService(repository, NewMetrics(prometheus.NewRegistry()))
+	created, err := service.Create(ctx, "Ada", "", "ada@example.com")
 	require.NoError(t, err)
-	_, err = pool.Exec(ctx, "INSERT INTO user_outbox (id, subject, payload) VALUES ($1::uuid, $2, jsonb_build_object('id', ($1::uuid)::text, 'name', 'Ada', 'email', 'ada@example.com'))", userID, events.UserCreatedSubject)
-	require.NoError(t, err)
-	migration, err := os.ReadFile(filepath.Join("..", "migrations", "20261009000000.sql"))
-	require.NoError(t, err)
-	_, err = pool.Exec(ctx, string(migration))
-	require.NoError(t, err)
+	userID := created.ID
 
 	var eventID, linkedUserID string
 	var payload []byte

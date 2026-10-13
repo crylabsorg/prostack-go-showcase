@@ -1,9 +1,15 @@
 # Email service
 
-Run `docker compose -f devops/docker-compose.yaml up -d postgres nats`, apply migrations with `make migrate-up-user`, then run `make run-user` and `make run-email` from the repository root. The default `EMAIL_PROVIDER: fake` logs welcome emails without sending them.
+Run `docker compose -f devops/docker-compose.yaml up -d postgres nats kafka jaeger`, apply migrations with `make migrate-up-user`, then run `make run-user` and `make run-email` from the repository root. The default `EMAIL_PROVIDER: fake` logs welcome emails without sending them.
 
 For real delivery, set `EMAIL_PROVIDER=mailgun`, `EMAIL_FROM`, `MAILGUN_DOMAIN`, and `MAILGUN_API_KEY` in the email process environment. Set `MAILGUN_BASE_URL=https://api.eu.mailgun.net` for an EU region domain; the default is `https://api.mailgun.net`.
 
-User creation commits the user and `user.created` event together. The user service retries publication to JetStream, and the email service subscribes to the event and acknowledges it only after the provider accepts it. Delivery is at least once: a crash after Mailgun accepts a request but before NATS records the acknowledgement can send the same welcome email again.
+User creation commits the user and `user.created` event together. The user service retries publication to both JetStream and Kafka, and the email service subscribes to the event and acknowledges it only after the provider accepts it. Delivery is at least once: a crash after Mailgun accepts a request but before NATS records the acknowledgement can send the same welcome email again.
 
-User requests and events use `first_name` and `last_name`. Each `user_outbox` message has its own `id`, with `user_id` referencing the user. Publication sets `processed_at` after JetStream acknowledges the message; processed rows are retained and excluded from subsequent batches.
+User requests and events use `first_name` and `last_name`. Each `user_outbox` message has its own `id`, with `user_id` referencing the user. Publication sets `processed_at` after both brokers acknowledge the message; processed rows are retained and excluded from subsequent batches.
+
+Both adapters implement `ps_event.Publisher`; `ps_event.Fanout` attempts both for each outbox message. Kafka uses topic `user.created` and the outbox event ID as the record key; NATS uses the same ID in `Nats-Msg-Id`. If either broker fails, the outbox record remains pending and the next attempt republishes to both. Kafka consumers must tolerate duplicates even with an idempotent producer; NATS deduplication is limited to its configured window.
+
+The email service consumes one source: `EVENT_BROKER=nats` (default) or `EVENT_BROKER=kafka`. For Kafka, set `KAFKA_BROKERS=localhost:9092` (comma-separated for multiple brokers). It uses consumer group `email-sender` and commits offsets after successful delivery. Provider failures leave the offset uncommitted and restart the consumer after five seconds. Malformed JSON is logged and committed, matching NATS termination. Switching sources can replay events that were already handled through the other broker.
+
+Kafka producer and consumer spans use the existing OTEL exporter configuration. W3C trace context and baggage travel in record headers. The outbox publication links to the stored request trace; consumer spans link to the producer span. Inspect these links in Jaeger at <http://localhost:16686>. Kafka processing and commit failures mark the span as an error.

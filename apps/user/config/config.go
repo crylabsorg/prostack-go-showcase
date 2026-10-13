@@ -6,12 +6,13 @@ import (
 )
 
 type Config struct {
-	LogPreset           logger.Preset `mapstructure:"LOG_PRESET" env:"LOG_PRESET" validate:"required,oneof=production development"`
-	ServiceName         string        `mapstructure:"SERVICE_NAME" env:"SERVICE_NAME" validate:"required"`
-	HTTPListenAddr      string        `mapstructure:"HTTP_LISTEN_ADDR" env:"HTTP_LISTEN_ADDR" validate:"required"`
-	GRPCListenAddr      string        `mapstructure:"GRPC_LISTEN_ADDR" env:"GRPC_LISTEN_ADDR" validate:"required"`
-	DatabaseURL         string        `mapstructure:"DATABASE_URL" env:"DATABASE_URL" validate:"required"`
-	NATSURL             string        `mapstructure:"NATS_URL" env:"NATS_URL" validate:"required"`
+	LogPreset      logger.Preset `mapstructure:"LOG_PRESET" env:"LOG_PRESET" validate:"required,oneof=production development"`
+	ServiceName    string        `mapstructure:"SERVICE_NAME" env:"SERVICE_NAME" validate:"required"`
+	HTTPListenAddr string        `mapstructure:"HTTP_LISTEN_ADDR" env:"HTTP_LISTEN_ADDR" validate:"required"`
+	GRPCListenAddr string        `mapstructure:"GRPC_LISTEN_ADDR" env:"GRPC_LISTEN_ADDR" validate:"required"`
+	DatabaseURL    string        `mapstructure:"DATABASE_URL" env:"DATABASE_URL" validate:"required"`
+	KafkaBrokers   []string      `mapstructure:"KAFKA_BROKERS" env:"KAFKA_BROKERS" validate:"required,min=1,dive,required"`
+	NATSURL        string        `mapstructure:"NATS_URL" env:"NATS_URL" validate:"required"`
 }
 
 func (c *Config) GetLogPreset() logger.Preset { return c.LogPreset }

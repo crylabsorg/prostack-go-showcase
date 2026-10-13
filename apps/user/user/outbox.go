@@ -3,24 +3,24 @@ package user
 import (
 	"context"
 
-	"github.com/crylabsorg/prostack-go/ps_nats"
+	"github.com/crylabsorg/prostack-go/ps_event"
 )
 
 type Outbox struct{ service *Service }
 
-var _ ps_nats.Outbox = (*Outbox)(nil)
+var _ ps_event.Outbox = (*Outbox)(nil)
 
 func NewOutbox(service *Service) *Outbox { return &Outbox{service: service} }
 
-func (o *Outbox) ProcessOutboxBatch(ctx context.Context, publish func([]ps_nats.OutboxMessage) []ps_nats.OutboxMessagePublishResult) error {
+func (o *Outbox) ProcessOutboxBatch(ctx context.Context, publish func([]ps_event.OutboxMessage) []ps_event.OutboxMessagePublishResult) error {
 	return o.service.processOutboxBatch(ctx, func(messages []OutboxMessage) []OutboxPublishResult {
-		natsMessages := make([]ps_nats.OutboxMessage, len(messages))
+		eventMessages := make([]ps_event.OutboxMessage, len(messages))
 		for i, message := range messages {
-			natsMessages[i] = message
+			eventMessages[i] = message
 		}
-		natsResults := publish(natsMessages)
-		results := make([]OutboxPublishResult, len(natsResults))
-		for i, result := range natsResults {
+		eventResults := publish(eventMessages)
+		results := make([]OutboxPublishResult, len(eventResults))
+		for i, result := range eventResults {
 			results[i] = OutboxPublishResult{ID: result.ID(), Err: result.Err}
 		}
 		return results

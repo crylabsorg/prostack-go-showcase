@@ -24,6 +24,13 @@ services:
     volumes:
       - nats_data:/data
     restart: unless-stopped
+  kafka:
+    image: apache/kafka:4.1.2
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_data:/tmp # default logs: /tmp/kraft-combined-logs
+    restart: unless-stopped
   jaeger:
     image: jaegertracing/jaeger:2.21.0
     ports:
@@ -60,4 +67,5 @@ volumes:
   postgres_data:
   redis_data:
   nats_data:
+  kafka_data:
   mongo_data:
