@@ -9,4 +9,5 @@ include $(ROOT_DIR)/prostack-go/make/compose.mk
 
 MODULE_DIRS := $(APP_DIRS) $(ROOT_DIR)
 include $(ROOT_DIR)/prostack-go/make/modules.mk
+include $(ROOT_DIR)/prostack-go/make/lint.mk
 include $(ROOT_DIR)/prostack-go/make/help.mk
