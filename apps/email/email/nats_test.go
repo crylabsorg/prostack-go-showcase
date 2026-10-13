@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
@@ -11,6 +12,28 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
+
+func TestRunStopsWhenContextIsCanceled(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"context", "draining context"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			canceledCtx, cancel := context.WithCancel(context.Background())
+			cancel()
+			ctx, drainingCtx := canceledCtx, context.Background()
+			if name == "draining context" {
+				ctx, drainingCtx = drainingCtx, ctx
+			}
+
+			done := Run(ctx, drainingCtx, nil, nil)
+			select {
+			case <-done:
+			case <-time.After(time.Second):
+				require.FailNow(t, "consumer did not stop")
+			}
+		})
+	}
+}
 
 type failingSender struct{}
 

@@ -25,13 +25,18 @@ type natsController struct {
 	service  *service
 }
 
-func Run(ctx context.Context, drainingCtx context.Context, natsConn *nats.Conn, sender Sender) {
+func Run(ctx context.Context, drainingCtx context.Context, natsConn *nats.Conn, sender Sender) <-chan struct{} {
 	controller := &natsController{natsConn: natsConn, service: &service{sender: sender}}
-	go controller.run(ctx, drainingCtx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		controller.run(ctx, drainingCtx)
+	}()
+	return done
 }
 
 func (c *natsController) run(ctx context.Context, drainingCtx context.Context) {
-	for {
+	for ctx.Err() == nil && drainingCtx.Err() == nil {
 		consumer, err := c.createConsumer(ctx)
 		if err == nil {
 			err = ps_nats.RunConsumer(ctx, drainingCtx, consumer, natsBatchSize, c.handleMessage)

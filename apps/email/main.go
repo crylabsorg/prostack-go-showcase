@@ -30,7 +30,11 @@ func setup(ctx context.Context, drainingCtx context.Context, cfg *config.Config,
 		return nil
 	})
 
-	email.Run(ctx, drainingCtx, natsConn, emailSender)
+	consumerDone := email.Run(ctx, drainingCtx, natsConn, emailSender)
+	app.RegisterCleanup(func() error {
+		<-consumerDone
+		return nil
+	})
 
 	return nil
 }
