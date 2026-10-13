@@ -1,11 +1,5 @@
 package main
 
-import (
-	"context"
-
-	"golang.org/x/sync/errgroup"
-)
-
 type Foo struct{}
 
 func (*Foo) A() {}
@@ -24,10 +18,12 @@ type BC interface {
 
 func main() {
 	var f AB = &Foo{}
-	y := f.(BC)
+	y, ok := f.(BC)
+	if !ok {
+		return
+	}
 	// y.A()
 	_ = y
-	g, ctx := errgroup.WithContext(context.Background())
 }
 
 // func main() {

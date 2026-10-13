@@ -1,4 +1,4 @@
-package config
+package config_test
 
 import (
 	"testing"
@@ -6,14 +6,17 @@ import (
 	"github.com/crylabsorg/prostack-go/logger"
 	"github.com/crylabsorg/prostack-go/testutils"
 	"github.com/stretchr/testify/require"
+
+	"github.com/crylabsorg/prostack-go-showcase/user/config"
 )
 
+//nolint:paralleltest // t.Chdir changes the process working directory.
 func TestConfig(t *testing.T) {
 	t.Chdir(testutils.ProjectRoot())
 
-	cfg, err := New()
+	cfg, err := config.New()
 	require.NoError(t, err)
-	expectedCfg := &Config{
+	expectedCfg := &config.Config{
 		LogPreset:      logger.PresetDevelopment,
 		ServiceName:    "app1",
 		HTTPListenAddr: ":33001",

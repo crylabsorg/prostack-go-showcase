@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 
-	"github.com/crylabsorg/prostack-go-showcase/email/config"
-	"github.com/crylabsorg/prostack-go-showcase/email/email"
 	"github.com/crylabsorg/prostack-go/ps_bootstrap"
 	"github.com/crylabsorg/prostack-go/ps_nats"
+
+	"github.com/crylabsorg/prostack-go-showcase/email/config"
+	"github.com/crylabsorg/prostack-go-showcase/email/email"
 )
 
 func main() { ps_bootstrap.Run(config.New, setup) }

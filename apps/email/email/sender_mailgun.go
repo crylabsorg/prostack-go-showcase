@@ -7,10 +7,14 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
+
+	"github.com/crylabsorg/prostack-go/logger"
+	"go.uber.org/zap"
 
 	"github.com/crylabsorg/prostack-go-showcase/email/config"
 )
+
+const mailgunErrorBodyLimit = 1024
 
 type mailgunSender struct {
 	client                 *http.Client
@@ -29,11 +33,21 @@ func NewSender(c *config.Config) (Sender, error) {
 	if err != nil || u.Scheme != "https" || u.Host == "" {
 		return nil, fmt.Errorf("invalid MAILGUN_BASE_URL: %q", base)
 	}
-	return &mailgunSender{client: &http.Client{Timeout: 20 * time.Second}, endpoint: strings.TrimRight(base, "/") + "/v3/" + url.PathEscape(c.MailgunDomain) + "/messages", apiKey: c.MailgunAPIKey, from: c.From}, nil
+	return &mailgunSender{
+		client:   &http.Client{Timeout: deliveryTimeout},
+		endpoint: strings.TrimRight(base, "/") + "/v3/" + url.PathEscape(c.MailgunDomain) + "/messages",
+		apiKey:   c.MailgunAPIKey,
+		from:     c.From,
+	}, nil
 }
 
 func (s *mailgunSender) Send(ctx context.Context, w SendWelcomeInput) error {
-	form := url.Values{"from": {s.from}, "to": {w.Email}, "subject": {"Welcome"}, "text": {"Welcome, " + w.FirstName + "!"}}
+	form := url.Values{
+		"from":    {s.from},
+		"to":      {w.Email},
+		"subject": {"Welcome"},
+		"text":    {"Welcome, " + w.FirstName + "!"},
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.endpoint, strings.NewReader(form.Encode()))
 	if err != nil {
 		return err
@@ -44,9 +58,16 @@ func (s *mailgunSender) Send(ctx context.Context, w SendWelcomeInput) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			logger.GetLogger(ctx).Warn("close mailgun response body", zap.Error(closeErr))
+		}
+	}()
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		body, readErr := io.ReadAll(io.LimitReader(resp.Body, mailgunErrorBodyLimit))
+		if readErr != nil {
+			return fmt.Errorf("read mailgun status %d response: %w", resp.StatusCode, readErr)
+		}
 		return fmt.Errorf("mailgun status %d: %s", resp.StatusCode, body)
 	}
 	return nil

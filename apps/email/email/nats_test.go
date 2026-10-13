@@ -1,4 +1,4 @@
-package email
+package email //nolint:testpackage // Tests exercise the private NATS controller.
 
 import (
 	"context"
@@ -20,6 +20,7 @@ func (failingSender) Send(context.Context, SendWelcomeInput) error {
 
 type failingMessage struct {
 	jetstream.Msg
+
 	data []byte
 }
 
@@ -29,6 +30,7 @@ func (m failingMessage) Subject() string      { return "user.created" }
 func (m failingMessage) Term() error          { return errors.New("terminate message") }
 func (m failingMessage) Nak() error           { return errors.New("nak message") }
 
+//nolint:paralleltest // Captures logs by replacing the process-wide zap logger.
 func TestNATSControllerReportsAcknowledgementFailures(t *testing.T) {
 	for _, test := range []struct {
 		name   string

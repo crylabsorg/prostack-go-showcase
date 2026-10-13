@@ -6,10 +6,11 @@ import (
 	"net/mail"
 	"strings"
 
-	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
 	"github.com/crylabsorg/prostack-go/logger"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+
+	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
 )
 
 type Service struct {
@@ -34,9 +35,9 @@ func (s *Service) Create(ctx context.Context, firstName, lastName, email string)
 	if err != nil {
 		return User{}, err
 	}
-	if err := s.repository.WithinTransaction(ctx, func(repository *Repository) error {
-		if err := repository.Create(ctx, user); err != nil {
-			return err
+	if err = s.repository.WithinTransaction(ctx, func(repository *Repository) error {
+		if createErr := repository.Create(ctx, user); createErr != nil {
+			return createErr
 		}
 		return repository.CreateOutboxMessage(ctx, user.ID, events.UserCreatedSubject, payload)
 	}); err != nil {
@@ -63,7 +64,8 @@ func (s *Service) processOutboxBatch(ctx context.Context, publish func([]OutboxM
 			if result.Err == nil {
 				acknowledgedIDs = append(acknowledgedIDs, result.ID)
 			} else {
-				logger.GetLogger(ctx).Warn("message is not published", zap.Error(result.Err), zap.String("id", result.ID))
+				logger.GetLogger(ctx).
+					Warn("message is not published", zap.Error(result.Err), zap.String("id", result.ID))
 			}
 		}
 		if len(acknowledgedIDs) == 0 {

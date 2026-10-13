@@ -6,12 +6,18 @@ import (
 	"errors"
 	"time"
 
-	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
 	"github.com/crylabsorg/prostack-go/logger"
 	"github.com/crylabsorg/prostack-go/ps_nats"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
+
+	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
+)
+
+const (
+	consumerRetryDelay = 5 * time.Second
+	natsBatchSize      = 50
 )
 
 type natsController struct {
@@ -28,7 +34,7 @@ func (c *natsController) run(ctx context.Context, drainingCtx context.Context) {
 	for {
 		consumer, err := c.createConsumer(ctx)
 		if err == nil {
-			err = ps_nats.RunConsumer(ctx, drainingCtx, consumer, 50, c.handleMessage)
+			err = ps_nats.RunConsumer(ctx, drainingCtx, consumer, natsBatchSize, c.handleMessage)
 		}
 		if err != nil {
 			logger.GetLogger(ctx).Error("email consumer", zap.Error(err))
@@ -38,7 +44,7 @@ func (c *natsController) run(ctx context.Context, drainingCtx context.Context) {
 			return
 		case <-drainingCtx.Done():
 			return
-		case <-time.After(5 * time.Second):
+		case <-time.After(consumerRetryDelay):
 		}
 	}
 }
@@ -64,7 +70,10 @@ func (c *natsController) handleMessage(ctx context.Context, msg jetstream.Msg) e
 		}
 		return err
 	}
-	err = c.service.sendWelcome(ctx, SendWelcomeInput{ID: event.ID, FirstName: event.FirstName, LastName: event.LastName, Email: event.Email})
+	err = c.service.sendWelcome(
+		ctx,
+		SendWelcomeInput{ID: event.ID, FirstName: event.FirstName, LastName: event.LastName, Email: event.Email},
+	)
 	if err == nil {
 		err = msg.DoubleAck(ctx)
 	} else {

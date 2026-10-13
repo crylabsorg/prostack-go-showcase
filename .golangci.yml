@@ -329,6 +329,10 @@ linters:
         # https://github.com/godoc-lint/godoc-lint?tab=readme-ov-file#require-stdlib-doclink
         - require-stdlib-doclink
 
+    gomoddirectives:
+      # App modules use local replacements for the shared module and prostack-go.
+      replace-local: true
+
     govet:
       # Enable all analyzers.
       # Default: false

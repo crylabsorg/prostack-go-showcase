@@ -4,8 +4,9 @@ import (
 	"encoding/json/v2"
 	"net/http"
 
-	userv1 "github.com/crylabsorg/prostack-go-showcase/pkg/proto/user/v1"
 	"github.com/crylabsorg/prostack-go/controller"
+
+	userv1 "github.com/crylabsorg/prostack-go-showcase/pkg/proto/user/v1"
 )
 
 func RegisterHTTP(mux *http.ServeMux, users userv1.UserServiceClient) {
@@ -16,6 +17,7 @@ func RegisterHTTP(mux *http.ServeMux, users userv1.UserServiceClient) {
 
 type httpController struct {
 	controller.Controller
+
 	users userv1.UserServiceClient
 }
 

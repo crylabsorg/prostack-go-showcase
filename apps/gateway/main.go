@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 
+	"github.com/crylabsorg/prostack-go/ps_bootstrap"
+	"github.com/crylabsorg/prostack-go/ps_grpc"
+
 	"github.com/crylabsorg/prostack-go-showcase/gateway/config"
 	"github.com/crylabsorg/prostack-go-showcase/gateway/user"
 	userv1 "github.com/crylabsorg/prostack-go-showcase/pkg/proto/user/v1"
-	"github.com/crylabsorg/prostack-go/ps_bootstrap"
-	"github.com/crylabsorg/prostack-go/ps_grpc"
 )
 
 //	@title			ProductionStack Gateway V2 API

@@ -3,12 +3,14 @@ package user
 import (
 	"context"
 
-	userv1 "github.com/crylabsorg/prostack-go-showcase/pkg/proto/user/v1"
 	"google.golang.org/grpc"
+
+	userv1 "github.com/crylabsorg/prostack-go-showcase/pkg/proto/user/v1"
 )
 
 type server struct {
 	userv1.UnimplementedUserServiceServer
+
 	service *Service
 }
 

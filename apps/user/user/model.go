@@ -8,5 +8,5 @@ type modelUser struct {
 }
 
 func (u modelUser) toDomain() User {
-	return User{ID: u.ID, FirstName: u.FirstName, LastName: u.LastName, Email: u.Email}
+	return User(u)
 }
