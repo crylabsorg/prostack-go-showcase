@@ -18,7 +18,7 @@ func setup(ctx context.Context, drainingCtx context.Context, cfg *config.Config,
 		return err
 	}
 	if cfg.EventBroker == "kafka" {
-		email.RunKafka(ctx, drainingCtx, cfg.KafkaBrokers, emailSender)
+		app.RegisterWorker(email.RunKafka(ctx, drainingCtx, cfg.KafkaBrokers, emailSender))
 		return nil
 	}
 	natsConn, err := ps_nats.Connect(cfg.NATSURL)
@@ -31,10 +31,7 @@ func setup(ctx context.Context, drainingCtx context.Context, cfg *config.Config,
 	})
 
 	consumerDone := email.Run(ctx, drainingCtx, natsConn, emailSender)
-	app.RegisterCleanup(func() error {
-		<-consumerDone
-		return nil
-	})
+	app.RegisterWorker(consumerDone)
 
 	return nil
 }

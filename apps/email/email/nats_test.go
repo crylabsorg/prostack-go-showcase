@@ -25,11 +25,15 @@ func TestRunStopsWhenContextIsCanceled(t *testing.T) {
 				ctx, drainingCtx = drainingCtx, ctx
 			}
 
-			done := Run(ctx, drainingCtx, nil, nil)
-			select {
-			case <-done:
-			case <-time.After(time.Second):
-				require.FailNow(t, "consumer did not stop")
+			for _, done := range []<-chan struct{}{
+				Run(ctx, drainingCtx, nil, nil),
+				RunKafka(ctx, drainingCtx, nil, nil),
+			} {
+				select {
+				case <-done:
+				case <-time.After(time.Second):
+					require.FailNow(t, "consumer did not stop")
+				}
 			}
 		})
 	}

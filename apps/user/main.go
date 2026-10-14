@@ -3,15 +3,17 @@ package main
 import (
 	"context"
 
-	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
-	"github.com/crylabsorg/prostack-go-showcase/user/config"
-	"github.com/crylabsorg/prostack-go-showcase/user/user"
 	"github.com/crylabsorg/prostack-go/ps_bootstrap"
 	"github.com/crylabsorg/prostack-go/ps_event"
 	"github.com/crylabsorg/prostack-go/ps_kafka"
 	"github.com/crylabsorg/prostack-go/ps_nats"
 	"github.com/crylabsorg/prostack-go/ps_pg"
 	"github.com/nats-io/nats.go/jetstream"
+	"google.golang.org/grpc"
+
+	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
+	"github.com/crylabsorg/prostack-go-showcase/user/config"
+	"github.com/crylabsorg/prostack-go-showcase/user/user"
 )
 
 func main() {
@@ -54,13 +56,16 @@ func setup(ctx context.Context, drainingCtx context.Context, cfg *config.Config,
 		return nil
 	})
 	app.RegisterHealthProbe(ctx, "kafka", kafkaPublisher.Ping)
-	publisherDone := ps_event.RunOutboxPublisher(ctx, drainingCtx, ps_event.Fanout{ps_nats.NewPublisher(jetStream), kafkaPublisher}, user.NewOutbox(userService))
+	publisherDone := ps_event.RunOutboxPublisher(
+		ctx, drainingCtx,
+		ps_event.Fanout{ps_nats.NewPublisher(jetStream), kafkaPublisher},
+		user.NewOutbox(userService),
+	)
 
-	app.RegisterCleanup(func() error {
-		<-publisherDone
-		return nil
+	app.RegisterWorker(publisherDone)
+
+	app.RegisterGRPC(func(grpcServer *grpc.Server) {
+		user.RegisterGRPC(grpcServer, userService)
 	})
-
-	user.RegisterGRPC(app.GetGRPCServer(), userService)
 	return nil
 }

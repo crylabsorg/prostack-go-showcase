@@ -15,9 +15,11 @@ import (
 
 type kafkaController struct{ service *service }
 
-func RunKafka(ctx, drainingCtx context.Context, brokers []string, sender Sender) {
+func RunKafka(ctx, drainingCtx context.Context, brokers []string, sender Sender) <-chan struct{} {
 	controller := &kafkaController{service: &service{sender: sender}}
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
 		for ctx.Err() == nil && drainingCtx.Err() == nil {
 			err := ps_kafka.RunConsumer(
 				ctx,
@@ -39,6 +41,7 @@ func RunKafka(ctx, drainingCtx context.Context, brokers []string, sender Sender)
 			}
 		}
 	}()
+	return done
 }
 
 func (c *kafkaController) handleMessage(ctx context.Context, record *kgo.Record) error {
