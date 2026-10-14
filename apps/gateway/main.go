@@ -2,14 +2,19 @@ package main
 
 import (
 	"context"
+	_ "embed"
 
 	"github.com/crylabsorg/prostack-go/ps_bootstrap"
 	"github.com/crylabsorg/prostack-go/ps_grpc"
+	"github.com/crylabsorg/prostack-go/ps_swagger"
 
 	"github.com/crylabsorg/prostack-go-showcase/gateway/config"
 	"github.com/crylabsorg/prostack-go-showcase/gateway/user"
 	userv1 "github.com/crylabsorg/prostack-go-showcase/pkg/proto/user/v1"
 )
+
+//go:embed internal/swagger/swagger.json
+var swaggerSpec []byte
 
 //	@title			ProductionStack Gateway V2 API
 //	@version		2.0
@@ -42,6 +47,8 @@ func setup(ctx context.Context, _ context.Context, cfg *config.Config, app *ps_b
 
 	mux := app.GetHTTPServeMux()
 	user.RegisterHTTP(mux, userv1.NewUserServiceClient(userConnection))
+
+	ps_swagger.SetupSwagger(ctx, mux, swaggerSpec)
 
 	return nil
 }
