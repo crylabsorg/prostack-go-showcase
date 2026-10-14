@@ -5,18 +5,24 @@ include $(ROOT_DIR)/prostack-go/make/consts.mk
 include $(ROOT_DIR)/prostack-go/make/apps.mk
 include $(ROOT_DIR)/prostack-go/make/migrations.mk
 include $(ROOT_DIR)/prostack-go/make/proto.mk
-include $(ROOT_DIR)/prostack-go/make/swagger.mk
 include $(ROOT_DIR)/prostack-go/make/compose.mk
 
+OAPI_CODEGEN_VERSION := v2.8.0
+
 ## Swagger:
+.PHONY: install-oapi-codegen
+install-oapi-codegen: ## Install pinned oapi-codegen in bin/ if needed
+	@if [ ! -x "$(ROOT_DIR)/bin/oapi-codegen" ] || \
+		[ "$$(go version -m "$(ROOT_DIR)/bin/oapi-codegen" | \
+			awk '$$1 == "mod" && $$2 == "github.com/oapi-codegen/oapi-codegen/v2" { print $$3 }')" != "$(OAPI_CODEGEN_VERSION)" ]; then \
+		GOBIN="$(ROOT_DIR)/bin" go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$(OAPI_CODEGEN_VERSION); \
+	fi
+
 .PHONY: build-gateway-swagger
-build-gateway-swagger: install-swag ## Generate gateway OpenAPI 3.1 documentation
-	@cd "$(APPS_DIR)/gateway" && "$(ROOT_DIR)/bin/swag" init \
-		--generalInfo main.go \
-		--dir "./,$(ROOT_DIR)/prostack-go/controller" \
-		--output "$(APPS_DIR)/gateway/internal/swagger" \
-		--outputTypes json \
-		--v3.1
+build-gateway-swagger: install-oapi-codegen ## Generate gateway models and HTTP routes from OpenAPI
+	@set -e; cd "$(APPS_DIR)/gateway"; for config in oapi/*.yaml; do \
+		"$(ROOT_DIR)/bin/oapi-codegen" --config "$$config" swagger.json; \
+	done
 
 MODULE_DIRS := $(APP_DIRS) $(ROOT_DIR)
 include $(ROOT_DIR)/prostack-go/make/modules.mk

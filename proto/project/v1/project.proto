@@ -1,0 +1,32 @@
+edition = "2024";
+
+package project.v1;
+
+service ProjectService {
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse);
+}
+
+message Project {
+  string id = 1;
+  string organization_id = 2;
+  string name = 3;
+}
+
+message CreateProjectRequest {
+  string organization_id = 1;
+  string name = 2;
+}
+
+message CreateProjectResponse {
+  Project project = 1;
+}
+
+message GetProjectRequest {
+  string organization_id = 1;
+  string id = 2;
+}
+
+message GetProjectResponse {
+  Project project = 1;
+}

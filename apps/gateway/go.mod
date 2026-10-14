@@ -7,12 +7,14 @@ replace github.com/crylabsorg/prostack-go => ../../prostack-go
 require (
 	github.com/crylabsorg/prostack-go v0.0.0-00010101000000-000000000000
 	github.com/crylabsorg/prostack-go-showcase v0.0.0
+	github.com/oapi-codegen/runtime v1.6.0
 	github.com/stretchr/testify v1.12.1
 	google.golang.org/grpc v1.84.0
 )
 
 require (
 	code.dny.dev/ssrf v0.3.0 // indirect
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

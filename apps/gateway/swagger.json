@@ -1,0 +1,550 @@
+{
+    "components": {
+        "schemas": {
+            "ErrorResponse": {
+                "properties": {
+                    "args": {
+                        "description": "Args are optional values interpolated into the message template (e.g. field names\nor limits). Their order matches the placeholders in the message.",
+                        "items": {},
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "errorCode": {
+                        "description": "ErrorCode is a stable numeric application error code identifying the error type.\nUse it for programmatic handling; it does not change across locales or message wording.",
+                        "type": "integer"
+                    },
+                    "message": {
+                        "description": "Message is a human-readable description of what went wrong. Intended for\nlogging and debugging, not for programmatic branching (use errorCode for that).",
+                        "type": "string"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "message",
+                    "errorCode"
+                ],
+                "x-go-type": "controller.ErrorResponse",
+                "x-go-type-import": {
+                    "path": "github.com/crylabsorg/prostack-go/controller"
+                }
+            },
+            "CreateUserRequest": {
+                "properties": {
+                    "email": {
+                        "type": "string"
+                    },
+                    "first_name": {
+                        "type": "string"
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "x-go-type-skip-optional-pointer": true
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "email",
+                    "first_name"
+                ],
+                "additionalProperties": false
+            },
+            "UserResponse": {
+                "properties": {
+                    "email": {
+                        "type": "string"
+                    },
+                    "first_name": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string",
+                        "x-go-name": "ID"
+                    },
+                    "last_name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "email",
+                    "first_name",
+                    "id",
+                    "last_name"
+                ]
+            },
+            "CreateOrganizationRequest": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "examples": [
+                            "A"
+                        ]
+                    }
+                }
+            },
+            "OrganizationResponse": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "name"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "x-go-name": "ID"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CreateProjectRequest": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "examples": [
+                            "TEST"
+                        ]
+                    }
+                }
+            },
+            "ProjectResponse": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "organization_id"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "x-go-name": "ID"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "x-go-name": "OrganizationID"
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "AccessToken": {
+                "in": "cookie",
+                "name": "accessToken",
+                "type": "apiKey"
+            },
+            "ApiKey": {
+                "in": "header",
+                "name": "X-Api-Key",
+                "type": "apiKey"
+            },
+            "RefreshToken": {
+                "in": "cookie",
+                "name": "refreshToken",
+                "type": "apiKey"
+            }
+        }
+    },
+    "info": {
+        "description": "API Gateway V2 for ProductionStack microservices",
+        "title": "ProductionStack Gateway V2 API",
+        "version": "2.0"
+    },
+    "paths": {
+        "/v1/users": {
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateUserRequest"
+                            }
+                        }
+                    },
+                    "description": "User details",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserResponse"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            },
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "Invalid user input; malformed JSON returns text/plain"
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Conflict"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Create a user",
+                "tags": [
+                    "users"
+                ],
+                "operationId": "createUser"
+            }
+        },
+        "/v1/users/{id}": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "User ID",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Get a user",
+                "tags": [
+                    "users"
+                ],
+                "operationId": "getUser"
+            }
+        },
+        "/v1/organizations": {
+            "post": {
+                "operationId": "createOrganization",
+                "summary": "Create a demo organization",
+                "description": "Demo resource stored in memory; data is lost when apps/demo restarts.",
+                "tags": [
+                    "organizations"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrganizationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input; malformed JSON returns text/plain",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            },
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateOrganizationRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/organizations/{orgId}": {
+            "get": {
+                "operationId": "getOrganization",
+                "summary": "Get a demo organization",
+                "description": "Demo resource stored in memory; data is lost when apps/demo restarts.",
+                "tags": [
+                    "organizations"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrganizationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Resource not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/v1/organizations/{orgId}/projects": {
+            "post": {
+                "operationId": "createProject",
+                "summary": "Create a demo project",
+                "description": "Demo resource stored in memory; data is lost when apps/demo restarts.",
+                "tags": [
+                    "projects"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input; malformed JSON returns text/plain",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            },
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Resource not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateProjectRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/organizations/{orgId}/projects/{projectId}": {
+            "get": {
+                "operationId": "getProject",
+                "summary": "Get a demo project",
+                "description": "Demo resource stored in memory; data is lost when apps/demo restarts.",
+                "tags": [
+                    "projects"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Resource not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "openapi": "3.1.0",
+    "tags": [
+        {
+            "name": "users",
+            "description": "User service"
+        },
+        {
+            "name": "organizations",
+            "description": "Demo organizations (in memory)"
+        },
+        {
+            "name": "projects",
+            "description": "Demo projects scoped to an organization (in memory)"
+        }
+    ]
+}

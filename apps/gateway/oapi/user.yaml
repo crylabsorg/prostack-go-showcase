@@ -1,0 +1,7 @@
+package: user
+generate:
+  models: true
+  std-http-server: true
+output: user/api.gen.go
+output-options:
+  include-tags: [users]

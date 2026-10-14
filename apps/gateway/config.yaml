@@ -2,6 +2,7 @@ LOG_PRESET: development
 SERVICE_NAME: gateway
 HTTP_LISTEN_ADDR: :33000
 USER_GRPC_ADDR: localhost:43001
+DEMO_GRPC_ADDR: localhost:43003
 
 OTEL_SERVICE_NAME: gateway
 OTEL_METRICS_EXPORTER: ps_prometheus
