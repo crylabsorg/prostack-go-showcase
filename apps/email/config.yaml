@@ -2,8 +2,6 @@ LOG_PRESET: development
 SERVICE_NAME: email
 HTTP_LISTEN_ADDR: :33002
 NATS_URL: nats://localhost:4222
-KAFKA_BROKERS: [localhost:9092]
-EVENT_BROKER: nats
 EMAIL_PROVIDER: fake
 
 OTEL_SERVICE_NAME: email

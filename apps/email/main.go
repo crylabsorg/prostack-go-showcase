@@ -17,21 +17,21 @@ func setup(ctx context.Context, drainingCtx context.Context, cfg *config.Config,
 	if err != nil {
 		return err
 	}
-	if cfg.EventBroker == "kafka" {
-		app.RegisterWorker(email.RunKafka(ctx, drainingCtx, cfg.KafkaBrokers, emailSender))
-		return nil
-	}
-	natsConn, err := ps_nats.Connect(cfg.NATSURL)
-	if err != nil {
-		return err
-	}
-	app.RegisterCleanup(func() error {
-		natsConn.Close()
-		return nil
-	})
+	if cfg.NATSURL != "" {
+		natsConn, connectErr := ps_nats.Connect(cfg.NATSURL)
+		if connectErr != nil {
+			return connectErr
+		}
+		app.RegisterCleanup(func() error {
+			natsConn.Close()
+			return nil
+		})
 
-	consumerDone := email.Run(ctx, drainingCtx, natsConn, emailSender)
-	app.RegisterWorker(consumerDone)
+		app.RegisterWorker(email.Run(ctx, drainingCtx, natsConn, emailSender))
+	}
+	if len(cfg.KafkaBrokers) > 0 {
+		app.RegisterWorker(email.RunKafka(ctx, drainingCtx, cfg.KafkaBrokers, emailSender))
+	}
 
 	return nil
 }

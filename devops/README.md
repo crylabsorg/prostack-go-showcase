@@ -26,4 +26,4 @@ The file is located at `/etc/hosts` on macOS and Linux, and at `C:\Windows\Syste
 
 To prevent the browser from warning that the certificate is not trusted, it is recommended to add `certs/prostack.crt` to your operating system's trusted certificates. Search for instructions for your operating system.
 
-Kafka runs in single-node KRaft mode at `localhost:9092` with persistent storage in `kafka_data`. Applications run on the host, matching the image's default advertised listener. The user service publishes `user.created` to NATS and Kafka; select the email consumer with `EVENT_BROKER=nats` or `EVENT_BROKER=kafka`.
+Kafka runs in single-node KRaft mode at `localhost:9092` with persistent storage in `kafka_data`. Applications run on the host, matching the image's default advertised listener. The user service publishes `user.created` to NATS and Kafka. The email service starts consumers for each configured broker (`NATS_URL` and `KAFKA_BROKERS`); its default config enables only NATS. See the [email service configuration](../apps/email/README.md) to enable Kafka or both consumers.
