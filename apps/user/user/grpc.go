@@ -21,12 +21,10 @@ func RegisterGRPC(grpcServer *grpc.Server, svc *Service) {
 func (s *server) CreateUser(ctx context.Context, req *userv1.CreateUserRequest) (*userv1.CreateUserResponse, error) {
 	var firstName, lastName *string
 	if req.HasFirstName() {
-		value := req.GetFirstName()
-		firstName = &value
+		firstName = new(req.GetFirstName())
 	}
 	if req.HasLastName() {
-		value := req.GetLastName()
-		lastName = &value
+		lastName = new(req.GetLastName())
 	}
 	user, err := s.service.Create(ctx, firstName, lastName, req.GetEmail())
 	if err != nil {

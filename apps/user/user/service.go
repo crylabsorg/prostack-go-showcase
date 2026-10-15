@@ -24,12 +24,10 @@ func NewService(repository *Repository, metrics *Metrics) *Service {
 
 func (s *Service) Create(ctx context.Context, firstName, lastName *string, email string) (User, error) {
 	if firstName != nil {
-		trimmed := strings.TrimSpace(*firstName)
-		firstName = &trimmed
+		firstName = new(strings.TrimSpace(*firstName))
 	}
 	if lastName != nil {
-		trimmed := strings.TrimSpace(*lastName)
-		lastName = &trimmed
+		lastName = new(strings.TrimSpace(*lastName))
 	}
 	email = strings.TrimSpace(email)
 	address, err := mail.ParseAddress(email)

@@ -20,12 +20,10 @@ func newUserResponse(user *userv1.User) UserResponse {
 		Email: user.GetEmail(),
 	}
 	if user.HasFirstName() {
-		value := user.GetFirstName()
-		response.FirstName = &value
+		response.FirstName = new(user.GetFirstName())
 	}
 	if user.HasLastName() {
-		value := user.GetLastName()
-		response.LastName = &value
+		response.LastName = new(user.GetLastName())
 	}
 	return response
 }
