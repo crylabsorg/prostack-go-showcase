@@ -52,8 +52,5 @@ func (c *kafkaController) handleMessage(ctx context.Context, record *kgo.Record)
 			Error("invalid user.created kafka event", zap.Int32("partition", record.Partition), zap.Int64("offset", record.Offset), zap.Error(err))
 		return nil
 	}
-	return c.service.sendWelcome(
-		ctx,
-		SendWelcomeInput{ID: event.ID, FirstName: event.FirstName, LastName: event.LastName, Email: event.Email},
-	)
+	return c.service.sendWelcome(ctx, newSendWelcomeInput(event))
 }

@@ -2,8 +2,8 @@ package user
 
 type modelUser struct {
 	ID        string
-	FirstName string
-	LastName  string
+	FirstName *string
+	LastName  *string
 	Email     string
 }
 

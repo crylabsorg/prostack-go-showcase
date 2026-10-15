@@ -62,4 +62,10 @@ func TestMailgunSender(t *testing.T) {
 	require.NoError(t, request.parseErr)
 	require.Equal(t, "ada@example.com", request.recipient)
 	require.Equal(t, "Welcome, Ada!", request.text)
+
+	require.NoError(t, sender.Send(context.Background(), SendWelcomeInput{ID: "2", Email: "grace@example.com"}))
+	request = <-requests
+	require.NoError(t, request.parseErr)
+	require.Equal(t, "grace@example.com", request.recipient)
+	require.Equal(t, "Welcome!", request.text)
 }

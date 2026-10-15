@@ -30,6 +30,9 @@ func TestKafkaController(t *testing.T) {
 		SendWelcomeInput{ID: "user-id", FirstName: "Ada", LastName: "Lovelace", Email: "ada@example.com"},
 		sender.welcome,
 	)
+	record.Value = []byte(`{"id":"user-id","email":"ada@example.com"}`)
+	require.NoError(t, controller.handleMessage(context.Background(), record))
+	require.Equal(t, SendWelcomeInput{ID: "user-id", Email: "ada@example.com"}, sender.welcome)
 	controller.service.sender = failingSender{}
 	require.ErrorContains(t, controller.handleMessage(context.Background(), record), "delivery failed")
 	core, logs := observer.New(zap.ErrorLevel)

@@ -22,12 +22,18 @@ func NewService(repository *Repository, metrics *Metrics) *Service {
 	return &Service{repository: repository, metrics: metrics}
 }
 
-func (s *Service) Create(ctx context.Context, firstName, lastName, email string) (User, error) {
-	firstName = strings.TrimSpace(firstName)
-	lastName = strings.TrimSpace(lastName)
+func (s *Service) Create(ctx context.Context, firstName, lastName *string, email string) (User, error) {
+	if firstName != nil {
+		trimmed := strings.TrimSpace(*firstName)
+		firstName = &trimmed
+	}
+	if lastName != nil {
+		trimmed := strings.TrimSpace(*lastName)
+		lastName = &trimmed
+	}
 	email = strings.TrimSpace(email)
 	address, err := mail.ParseAddress(email)
-	if firstName == "" || err != nil || address.Address != email {
+	if err != nil || address.Address != email {
 		return User{}, ErrInvalidInput
 	}
 	user := User{ID: uuid.NewString(), FirstName: firstName, LastName: lastName, Email: email}

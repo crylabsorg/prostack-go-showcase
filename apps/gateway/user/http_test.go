@@ -36,8 +36,12 @@ func (client *testUserClient) CreateUser(
 	}
 	user := &userv1.User{}
 	user.SetId("user-id")
-	user.SetFirstName(request.GetFirstName())
-	user.SetLastName(request.GetLastName())
+	if request.HasFirstName() {
+		user.SetFirstName(request.GetFirstName())
+	}
+	if request.HasLastName() {
+		user.SetLastName(request.GetLastName())
+	}
 	user.SetEmail(request.GetEmail())
 	response := &userv1.CreateUserResponse{}
 	response.SetUser(user)
@@ -91,7 +95,7 @@ func TestUserRoutes(t *testing.T) {
 	require.Equal(t, "user-id", client.getRequest.GetId())
 	require.JSONEq(
 		t,
-		`{"id":"user-id","first_name":"","last_name":"","email":""}`,
+		`{"id":"user-id","email":""}`,
 		get.Body.String(),
 	)
 }
@@ -168,4 +172,34 @@ func TestUserRouteUnexpectedError(t *testing.T) {
 
 	require.Equal(t, http.StatusInternalServerError, response.Code)
 	require.Contains(t, response.Body.String(), "unexpected error")
+}
+
+func TestCreateUserOptionalNames(t *testing.T) {
+	t.Parallel()
+	for _, testCase := range []struct {
+		name         string
+		body         string
+		response     string
+		hasFirstName bool
+		hasLastName  bool
+	}{
+		{name: "omitted", body: `{"email":"ada@example.com"}`, response: `{"id":"user-id","email":"ada@example.com"}`},
+		{name: "null", body: `{"email":"ada@example.com","first_name":null,"last_name":null}`, response: `{"id":"user-id","email":"ada@example.com"}`},
+		{name: "empty", body: `{"email":"ada@example.com","first_name":"","last_name":""}`, response: `{"id":"user-id","email":"ada@example.com","first_name":"","last_name":""}`, hasFirstName: true, hasLastName: true},
+		{name: "first only", body: `{"email":"ada@example.com","first_name":"Ada"}`, response: `{"id":"user-id","email":"ada@example.com","first_name":"Ada"}`, hasFirstName: true},
+		{name: "last only", body: `{"email":"ada@example.com","last_name":"Lovelace"}`, response: `{"id":"user-id","email":"ada@example.com","last_name":"Lovelace"}`, hasLastName: true},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			client := &testUserClient{}
+			mux := http.NewServeMux()
+			user.RegisterHTTP(mux, client)
+			response := httptest.NewRecorder()
+			mux.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/v1/users", strings.NewReader(testCase.body)))
+			require.Equal(t, http.StatusCreated, response.Code)
+			require.Equal(t, testCase.hasFirstName, client.createRequest.HasFirstName())
+			require.Equal(t, testCase.hasLastName, client.createRequest.HasLastName())
+			require.JSONEq(t, testCase.response, response.Body.String())
+		})
+	}
 }

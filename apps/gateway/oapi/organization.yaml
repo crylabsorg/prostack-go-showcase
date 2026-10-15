@@ -1,7 +1,0 @@
-package: organization
-generate:
-  models: true
-  std-http-server: true
-output: organization/api.gen.go
-output-options:
-  include-tags: [organizations]

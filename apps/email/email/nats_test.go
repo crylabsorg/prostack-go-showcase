@@ -57,6 +57,51 @@ func (m failingMessage) Subject() string      { return "user.created" }
 func (m failingMessage) Term() error          { return errors.New("terminate message") }
 func (m failingMessage) Nak() error           { return errors.New("nak message") }
 
+type acknowledgedMessage struct {
+	jetstream.Msg
+
+	data         []byte
+	acknowledged bool
+}
+
+func (m *acknowledgedMessage) Data() []byte { return m.data }
+func (m *acknowledgedMessage) DoubleAck(context.Context) error {
+	m.acknowledged = true
+	return nil
+}
+
+func TestNATSController(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		data      string
+		firstName string
+		lastName  string
+	}{
+		{name: "with names", data: `{"id":"user-id","first_name":"Ada","last_name":"Lovelace","email":"ada@example.com"}`, firstName: "Ada", lastName: "Lovelace"},
+		{name: "without names", data: `{"id":"user-id","email":"ada@example.com"}`},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			message := &acknowledgedMessage{data: []byte(test.data)}
+			sender := &recordingSender{}
+			controller := &natsController{service: &service{sender: sender}}
+			require.NoError(t, controller.handleMessage(context.Background(), message))
+			require.True(t, message.acknowledged)
+			require.Equal(
+				t,
+				SendWelcomeInput{
+					ID:        "user-id",
+					FirstName: test.firstName,
+					LastName:  test.lastName,
+					Email:     "ada@example.com",
+				},
+				sender.welcome,
+			)
+		})
+	}
+}
+
 //nolint:paralleltest // Captures logs by replacing the process-wide zap logger.
 func TestNATSControllerReportsAcknowledgementFailures(t *testing.T) {
 	for _, test := range []struct {

@@ -43,13 +43,13 @@ func TestServiceCreate(t *testing.T) {
 	metrics := usersvc.NewMetrics(prometheus.NewRegistry())
 	service := usersvc.NewService(repository, metrics)
 
-	created, err := service.Create(ctx, " Ada ", " Lovelace ", " ada@example.com ")
+	created, err := service.Create(ctx, new(" Ada "), new(" Lovelace "), " ada@example.com ")
 	require.NoError(t, err)
 	stored, err := repository.Get(ctx, created.ID)
 	require.NoError(t, err)
 	require.Equal(t, created, stored)
-	require.Equal(t, "Ada", created.FirstName)
-	require.Equal(t, "Lovelace", created.LastName)
+	require.Equal(t, new("Ada"), created.FirstName)
+	require.Equal(t, new("Lovelace"), created.LastName)
 	require.Equal(t, "ada@example.com", created.Email)
 	var subject string
 	var payload []byte
@@ -83,7 +83,7 @@ func TestServiceCreate(t *testing.T) {
 	require.NoError(t, metrics.Created.Write(&metric))
 	require.InDelta(t, 1, metric.GetCounter().GetValue(), 0)
 
-	_, err = service.Create(ctx, "Duplicate", "", created.Email)
+	_, err = service.Create(ctx, new("Duplicate"), new(""), created.Email)
 	require.Equal(t, usersvc.ErrEmailExists, err)
 
 	_, err = pool.Exec(
@@ -91,7 +91,7 @@ func TestServiceCreate(t *testing.T) {
 		"ALTER TABLE user_outbox ADD CONSTRAINT reject_conflict CHECK (payload->>'email' <> 'conflict@example.com')",
 	)
 	require.NoError(t, err)
-	_, err = service.Create(ctx, "Conflict", "", "conflict@example.com")
+	_, err = service.Create(ctx, new("Conflict"), new(""), "conflict@example.com")
 	require.Error(t, err)
 	require.NotEqual(t, usersvc.ErrEmailExists, err)
 	var userCount, outboxCount int
@@ -108,11 +108,7 @@ func TestServiceRejectsInvalidInput(t *testing.T) {
 	svc := &usersvc.Service{}
 	for _, call := range []func() error{
 		func() error {
-			_, err := svc.Create(t.Context(), "Ada", "Lovelace", "not-an-email")
-			return err
-		},
-		func() error {
-			_, err := svc.Create(t.Context(), " ", "Lovelace", "ada@example.com")
+			_, err := svc.Create(t.Context(), new("Ada"), new("Lovelace"), "not-an-email")
 			return err
 		},
 		func() error { _, err := svc.Get(t.Context(), "not-a-uuid"); return err },

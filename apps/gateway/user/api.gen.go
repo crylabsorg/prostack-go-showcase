@@ -15,9 +15,9 @@ import (
 
 // CreateUserRequest defines model for CreateUserRequest.
 type CreateUserRequest struct {
-	Email     string `json:"email"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name,omitempty"`
+	Email     string  `json:"email"`
+	FirstName *string `json:"first_name,omitzero"`
+	LastName  *string `json:"last_name,omitzero"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
@@ -25,10 +25,10 @@ type ErrorResponse = controller.ErrorResponse
 
 // UserResponse defines model for UserResponse.
 type UserResponse struct {
-	Email     string `json:"email"`
-	FirstName string `json:"first_name"`
-	ID        string `json:"id"`
-	LastName  string `json:"last_name"`
+	Email     string  `json:"email"`
+	FirstName *string `json:"first_name,omitzero"`
+	ID        string  `json:"id"`
+	LastName  *string `json:"last_name,omitzero"`
 }
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.

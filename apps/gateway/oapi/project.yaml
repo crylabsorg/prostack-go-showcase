@@ -1,7 +1,0 @@
-package: project
-generate:
-  models: true
-  std-http-server: true
-output: project/api.gen.go
-output-options:
-  include-tags: [projects]

@@ -28,9 +28,9 @@ func TestOutboxAdapter(t *testing.T) {
 	repository := usersvc.NewRepository(pool)
 	service := usersvc.NewService(repository, usersvc.NewMetrics(prometheus.NewRegistry()))
 	outbox := usersvc.NewOutbox(service)
-	first, firstCreateErr := service.Create(ctx, "Ada", "Lovelace", "ada@example.com")
+	first, firstCreateErr := service.Create(ctx, new("Ada"), new("Lovelace"), "ada@example.com")
 	require.NoError(t, firstCreateErr)
-	second, secondCreateErr := service.Create(ctx, "Grace", "Hopper", "grace@example.com")
+	second, secondCreateErr := service.Create(ctx, new("Grace"), new("Hopper"), "grace@example.com")
 	require.NoError(t, secondCreateErr)
 
 	var firstEventID, secondEventID string
@@ -98,7 +98,7 @@ func TestOutboxAdapter(t *testing.T) {
 			ctx,
 			func(messages []ps_event.OutboxMessage) []ps_event.OutboxMessagePublishResult {
 				require.Len(t, messages, 1)
-				_, err := service.Create(ctx, "Later", "", "later@example.com")
+				_, err := service.Create(ctx, new("Later"), new(""), "later@example.com")
 				require.NoError(t, err)
 				return []ps_event.OutboxMessagePublishResult{
 					{OutboxMessage: messages[0], Err: errors.New("retry later")},

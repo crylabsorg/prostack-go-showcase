@@ -3,7 +3,6 @@
 # Project conventions
 
 - Follow YAGNI: choose the smallest solution that meets the current requirement. Do not add public APIs, configuration, or abstractions without a current caller or concrete need.
-
 - Each service keeps its domain, model, repository, service, error, metrics, and transport controller files together in one Go package named after the service. For example, `apps/user/user/{domain,model,repository,service,errors,metrics,grpc}.go` all use `package user`. Keep NATS message handling in `nats.go`, Kafka message handling in `kafka.go`, and business logic in `service.go` without broker dependencies. Keep HTTP gateway request and response DTOs and their conversions in `dto.go`.
 - Keep methods that convert a domain type to another representation in `domain.go` beside that type. For example, define `User.ToProto()` beside `User`.
 - Limit API request bodies in Traefik, not Go handlers.
@@ -13,3 +12,4 @@
 - Keep configuration minimal. Use the default values supplied by a service or tool unless the task explicitly requires changing them. For PostgreSQL in Docker Compose, set only the required `POSTGRES_PASSWORD: postgres`; use the default `postgres` user and database.
 - Do not silently discard errors from fallible operations (for example, `_ = msg.Term()` or `_ = msg.NakWithDelay(...)`). Return or log the error with enough context to identify the failed operation.
 - Use `encoding/json/v2` for JSON handling; do not use `encoding/json`.
+- Prefer `fmt.Sprintf` over string concatenation when composing strings.

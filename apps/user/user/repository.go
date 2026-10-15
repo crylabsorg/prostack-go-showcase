@@ -42,7 +42,7 @@ func (r *Repository) Create(ctx context.Context, user User) error {
 
 func (r *Repository) Get(ctx context.Context, id string) (User, error) {
 	var user modelUser
-	err := r.db.QueryRow(ctx, "SELECT id, COALESCE(first_name, ''), COALESCE(last_name, ''), email FROM users WHERE id = $1", id).
+	err := r.db.QueryRow(ctx, "SELECT id, first_name, last_name, email FROM users WHERE id = $1", id).
 		Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return User{}, ErrNotFound

@@ -7,8 +7,8 @@ import (
 
 type User struct {
 	ID        string
-	FirstName string
-	LastName  string
+	FirstName *string
+	LastName  *string
 	Email     string
 }
 
@@ -19,8 +19,12 @@ func (user User) ToCreatedEvent() events.UserCreatedEvent {
 func (user User) ToProto() *userv1.User {
 	protoUser := &userv1.User{}
 	protoUser.SetId(user.ID)
-	protoUser.SetFirstName(user.FirstName)
-	protoUser.SetLastName(user.LastName)
+	if user.FirstName != nil {
+		protoUser.SetFirstName(*user.FirstName)
+	}
+	if user.LastName != nil {
+		protoUser.SetLastName(*user.LastName)
+	}
 	protoUser.SetEmail(user.Email)
 	return protoUser
 }

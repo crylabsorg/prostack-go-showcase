@@ -42,11 +42,15 @@ func NewSender(c *config.Config) (Sender, error) {
 }
 
 func (s *mailgunSender) Send(ctx context.Context, w SendWelcomeInput) error {
+	greeting := "Welcome!"
+	if w.FirstName != "" {
+		greeting = fmt.Sprintf("Welcome, %s!", w.FirstName)
+	}
 	form := url.Values{
 		"from":    {s.from},
 		"to":      {w.Email},
 		"subject": {"Welcome"},
-		"text":    {"Welcome, " + w.FirstName + "!"},
+		"text":    {greeting},
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.endpoint, strings.NewReader(form.Encode()))
 	if err != nil {

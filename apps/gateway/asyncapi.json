@@ -1,0 +1,118 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "ProStack user events",
+    "version": "1.0.0",
+    "description": "The user service publishes user.created after committing the user and its outbox entry. The outbox fans each event out to NATS JetStream and Kafka. Delivery is at least once; consumers should deduplicate by the outbox event ID, which differs from the user ID in the payload."
+  },
+  "defaultContentType": "application/json",
+  "servers": {
+    "nats": {
+      "host": "localhost:4222",
+      "protocol": "nats",
+      "description": "Local NATS JetStream broker; USER_EVENTS stream covers user.*."
+    },
+    "kafka": {
+      "host": "localhost:9092",
+      "protocol": "kafka",
+      "description": "Local Kafka broker."
+    }
+  },
+  "channels": {
+    "userCreatedNats": {
+      "address": "user.created",
+      "servers": [{ "$ref": "#/servers/nats" }],
+      "messages": {
+        "userCreated": {
+          "name": "UserCreatedNats",
+          "title": "User created (NATS)",
+          "summary": "A user was created.",
+          "payload": { "$ref": "#/components/schemas/UserCreated" },
+          "headers": {
+            "type": "object",
+            "required": ["Nats-Msg-Id"],
+            "properties": {
+              "Nats-Msg-Id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Outbox event ID used by JetStream for deduplication."
+              },
+              "Traceparent": { "$ref": "#/components/schemas/Traceparent" },
+              "Tracestate": { "$ref": "#/components/schemas/Tracestate" },
+              "Baggage": { "$ref": "#/components/schemas/Baggage" }
+            }
+          }
+        }
+      }
+    },
+    "userCreatedKafka": {
+      "address": "user.created",
+      "servers": [{ "$ref": "#/servers/kafka" }],
+      "messages": {
+        "userCreated": {
+          "name": "UserCreatedKafka",
+          "title": "User created (Kafka)",
+          "summary": "A user was created.",
+          "payload": { "$ref": "#/components/schemas/UserCreated" },
+          "headers": {
+            "type": "object",
+            "properties": {
+              "traceparent": { "$ref": "#/components/schemas/Traceparent" },
+              "tracestate": { "$ref": "#/components/schemas/Tracestate" },
+              "baggage": { "$ref": "#/components/schemas/Baggage" }
+            }
+          },
+          "bindings": {
+            "kafka": {
+              "key": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Outbox event ID, encoded as UTF-8."
+              },
+              "bindingVersion": "0.5.0"
+            }
+          }
+        }
+      }
+    }
+  },
+  "operations": {
+    "publishUserCreatedNats": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/userCreatedNats" },
+      "messages": [{ "$ref": "#/channels/userCreatedNats/messages/userCreated" }]
+    },
+    "publishUserCreatedKafka": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/userCreatedKafka" },
+      "messages": [{ "$ref": "#/channels/userCreatedKafka/messages/userCreated" }]
+    }
+  },
+  "components": {
+    "schemas": {
+      "UserCreated": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "email"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "description": "User ID." },
+          "first_name": { "type": "string", "description": "Omitted when no first name was supplied." },
+          "last_name": { "type": "string", "description": "Omitted when no last name was supplied." },
+          "email": { "type": "string", "format": "email" }
+        }
+      },
+      "Traceparent": {
+        "type": "string",
+        "description": "W3C trace context injected by OpenTelemetry when a valid trace is available."
+      },
+      "Tracestate": {
+        "type": "string",
+        "description": "Optional W3C vendor trace state."
+      },
+      "Baggage": {
+        "type": "string",
+        "description": "Optional W3C baggage propagated by OpenTelemetry."
+      }
+    }
+  }
+}
