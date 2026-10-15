@@ -3,6 +3,7 @@
 # Project conventions
 
 - Follow YAGNI: choose the smallest solution that meets the current requirement. Do not add public APIs, configuration, or abstractions without a current caller or concrete need.
+- Do not extract one-line wrapper functions that only forward a call without adding logic or functionality. Keep such calls inline at their point of use.
 - Each service keeps its domain, model, repository, service, error, metrics, and transport controller files together in one Go package named after the service. For example, `apps/user/user/{domain,model,repository,service,errors,metrics,grpc}.go` all use `package user`. Keep NATS message handling in `nats.go`, Kafka message handling in `kafka.go`, and business logic in `service.go` without broker dependencies. Keep HTTP gateway request and response DTOs and their conversions in `dto.go`.
 - Keep methods that convert a domain type to another representation in `domain.go` beside that type. For example, define `User.ToProto()` beside `User`.
 - Limit API request bodies in Traefik, not Go handlers.
