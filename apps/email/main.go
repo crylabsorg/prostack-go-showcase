@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/crylabsorg/prostack-go/ps_bootstrap"
+	"github.com/crylabsorg/prostack-go/ps_mongo"
 	"github.com/crylabsorg/prostack-go/ps_nats"
 
 	"github.com/crylabsorg/prostack-go-showcase/email/config"
@@ -17,6 +18,18 @@ func setup(ctx context.Context, drainingCtx context.Context, cfg *config.Config,
 	if err != nil {
 		return err
 	}
+	emailDatabase, disconnectDatabase := ps_mongo.New(ctx, cfg.MongoURI)
+	app.RegisterCleanup(func() error {
+		disconnectDatabase()
+		return nil
+	})
+	app.RegisterHealthProbe(ctx, "mongo", func(probeCtx context.Context) error {
+		return emailDatabase.Client().Ping(probeCtx, nil)
+	})
+	emailRepository, err := email.NewRepository(ctx, emailDatabase)
+	if err != nil {
+		return err
+	}
 	if cfg.NATSURL != "" {
 		natsConn, connectErr := ps_nats.Connect(cfg.NATSURL)
 		if connectErr != nil {
@@ -27,10 +40,10 @@ func setup(ctx context.Context, drainingCtx context.Context, cfg *config.Config,
 			return nil
 		})
 
-		app.RegisterWorker(email.Run(ctx, drainingCtx, natsConn, emailSender))
+		app.RegisterWorker(email.RunNats(ctx, drainingCtx, natsConn, emailSender, emailRepository))
 	}
 	if len(cfg.KafkaBrokers) > 0 {
-		app.RegisterWorker(email.RunKafka(ctx, drainingCtx, cfg.KafkaBrokers, emailSender))
+		app.RegisterWorker(email.RunKafka(ctx, drainingCtx, cfg.KafkaBrokers, emailSender, emailRepository))
 	}
 
 	return nil

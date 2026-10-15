@@ -15,8 +15,13 @@ import (
 
 type kafkaController struct{ service *service }
 
-func RunKafka(ctx, drainingCtx context.Context, brokers []string, sender Sender) <-chan struct{} {
-	controller := &kafkaController{service: &service{sender: sender}}
+func RunKafka(
+	ctx, drainingCtx context.Context,
+	brokers []string,
+	sender Sender,
+	repository *Repository,
+) <-chan struct{} {
+	controller := &kafkaController{service: &service{sender: sender, repository: repository}}
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -48,8 +53,12 @@ func (c *kafkaController) handleMessage(ctx context.Context, record *kgo.Record)
 	var event events.UserCreatedEvent
 	if err := json.Unmarshal(record.Value, &event); err != nil {
 		// Commit malformed events, matching Term() in the NATS controller.
-		logger.GetLogger(ctx).
-			Error("invalid user.created kafka event", zap.Int32("partition", record.Partition), zap.Int64("offset", record.Offset), zap.Error(err))
+		logger.GetLogger(ctx).Error(
+			"invalid user.created kafka event",
+			zap.Int32("partition", record.Partition),
+			zap.Int64("offset", record.Offset),
+			zap.Error(err),
+		)
 		return nil
 	}
 	return c.service.sendWelcome(ctx, newSendWelcomeInput(event))

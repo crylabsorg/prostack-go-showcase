@@ -23,16 +23,17 @@ func TestKafkaController(t *testing.T) {
 		Value: []byte(`{"id":"user-id","first_name":"Ada","last_name":"Lovelace","email":"ada@example.com"}`),
 	}
 	sender := &recordingSender{}
-	controller := &kafkaController{service: &service{sender: sender}}
+	controller := &kafkaController{service: &service{sender: sender, repository: newTestRepository(t)}}
 	require.NoError(t, controller.handleMessage(context.Background(), record))
 	require.Equal(
 		t,
 		SendWelcomeInput{ID: "user-id", FirstName: "Ada", LastName: "Lovelace", Email: "ada@example.com"},
 		sender.welcome,
 	)
-	record.Value = []byte(`{"id":"user-id","email":"ada@example.com"}`)
+	record.Value = []byte(`{"id":"another-user","email":"ada@example.com"}`)
 	require.NoError(t, controller.handleMessage(context.Background(), record))
-	require.Equal(t, SendWelcomeInput{ID: "user-id", Email: "ada@example.com"}, sender.welcome)
+	require.Equal(t, SendWelcomeInput{ID: "another-user", Email: "ada@example.com"}, sender.welcome)
+	record.Value = []byte(`{"id":"failed-user","email":"ada@example.com"}`)
 	controller.service.sender = failingSender{}
 	require.ErrorContains(t, controller.handleMessage(context.Background(), record), "delivery failed")
 	core, logs := observer.New(zap.ErrorLevel)

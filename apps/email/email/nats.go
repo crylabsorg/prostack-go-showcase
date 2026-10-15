@@ -25,8 +25,14 @@ type natsController struct {
 	service  *service
 }
 
-func Run(ctx context.Context, drainingCtx context.Context, natsConn *nats.Conn, sender Sender) <-chan struct{} {
-	controller := &natsController{natsConn: natsConn, service: &service{sender: sender}}
+func RunNats(
+	ctx context.Context,
+	drainingCtx context.Context,
+	natsConn *nats.Conn,
+	sender Sender,
+	repository *Repository,
+) <-chan struct{} {
+	controller := &natsController{natsConn: natsConn, service: &service{sender: sender, repository: repository}}
 	done := make(chan struct{})
 	go func() {
 		defer close(done)

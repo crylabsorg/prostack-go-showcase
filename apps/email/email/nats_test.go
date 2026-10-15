@@ -26,8 +26,8 @@ func TestRunStopsWhenContextIsCanceled(t *testing.T) {
 			}
 
 			for _, done := range []<-chan struct{}{
-				Run(ctx, drainingCtx, nil, nil),
-				RunKafka(ctx, drainingCtx, nil, nil),
+				RunNats(ctx, drainingCtx, nil, nil, nil),
+				RunKafka(ctx, drainingCtx, nil, nil, nil),
 			} {
 				select {
 				case <-done:
@@ -85,7 +85,7 @@ func TestNATSController(t *testing.T) {
 			t.Parallel()
 			message := &acknowledgedMessage{data: []byte(test.data)}
 			sender := &recordingSender{}
-			controller := &natsController{service: &service{sender: sender}}
+			controller := &natsController{service: &service{sender: sender, repository: newTestRepository(t)}}
 			require.NoError(t, controller.handleMessage(context.Background(), message))
 			require.True(t, message.acknowledged)
 			require.Equal(
@@ -120,7 +120,10 @@ func TestNATSControllerReportsAcknowledgementFailures(t *testing.T) {
 			defer restore()
 
 			msg := failingMessage{data: []byte(test.data)}
-			err := (&natsController{service: &service{sender: test.sender}}).handleMessage(context.Background(), msg)
+			err := (&natsController{service: &service{sender: test.sender, repository: newTestRepository(t)}}).handleMessage(
+				context.Background(),
+				msg,
+			)
 			require.ErrorContains(t, err, test.want)
 
 			if test.logged {

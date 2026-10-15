@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	MongoURI       string        `mapstructure:"MONGO_URI"        env:"MONGO_URI"        validate:"required"`
 	LogPreset      logger.Preset `mapstructure:"LOG_PRESET"       env:"LOG_PRESET"       validate:"required,oneof=production development"`
 	ServiceName    string        `mapstructure:"SERVICE_NAME"     env:"SERVICE_NAME"     validate:"required"`
 	HTTPListenAddr string        `mapstructure:"HTTP_LISTEN_ADDR" env:"HTTP_LISTEN_ADDR" validate:"required"`

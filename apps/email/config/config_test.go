@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -12,6 +13,7 @@ import (
 
 func TestConfig(t *testing.T) {
 	t.Chdir(testutils.ProjectRoot())
+	t.Setenv("MONGO_URI", "")
 	t.Setenv("NATS_URL", "")
 	t.Setenv("KAFKA_BROKERS", "")
 	c, err := config.New()
@@ -19,11 +21,13 @@ func TestConfig(t *testing.T) {
 	require.Equal(t, "fake", c.Provider)
 	require.Equal(t, ":33002", c.HTTPListenAddr)
 	require.Equal(t, "nats://localhost:4222", c.NATSURL)
-	require.Empty(t, c.KafkaBrokers)
+	require.Equal(t, []string{"localhost:9092"}, c.KafkaBrokers)
+	require.Equal(t, "mongodb://localhost:27017/email?replicaSet=my-replica-set", c.MongoURI)
 }
 
 func TestKafkaConfig(t *testing.T) {
 	t.Chdir(testutils.ProjectRoot())
+	t.Setenv("MONGO_URI", "")
 	t.Setenv("NATS_URL", "")
 	t.Setenv("KAFKA_BROKERS", "localhost:9092,localhost:9094")
 	c, err := config.New()
@@ -85,9 +89,13 @@ func TestBrokerConfig(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Chdir(t.TempDir())
+			t.Setenv("MONGO_URI", "")
 			t.Setenv("NATS_URL", "")
 			t.Setenv("KAFKA_BROKERS", "")
-			configYAML := "LOG_PRESET: development\nSERVICE_NAME: email\nHTTP_LISTEN_ADDR: :33002\nEMAIL_PROVIDER: fake\n" + testCase.brokerYAML
+			configYAML := fmt.Sprintf(
+				"LOG_PRESET: development\nSERVICE_NAME: email\nHTTP_LISTEN_ADDR: :33002\nEMAIL_PROVIDER: fake\nMONGO_URI: mongodb://localhost:27017/email\n%s",
+				testCase.brokerYAML,
+			)
 			require.NoError(t, os.WriteFile("config.yaml", []byte(configYAML), 0o600))
 
 			cfg, err := config.New()

@@ -1,7 +1,9 @@
 LOG_PRESET: development
 SERVICE_NAME: email
 HTTP_LISTEN_ADDR: :33002
+MONGO_URI: mongodb://localhost:27017/email?replicaSet=my-replica-set
 NATS_URL: nats://localhost:4222
+KAFKA_BROKERS: [localhost:9092]
 EMAIL_PROVIDER: fake
 
 OTEL_SERVICE_NAME: email
