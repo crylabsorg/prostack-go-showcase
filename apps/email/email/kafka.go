@@ -3,11 +3,15 @@ package email
 import (
 	"context"
 	"encoding/json/v2"
+	"fmt"
 	"time"
 
 	"github.com/crylabsorg/prostack-go/logger"
 	"github.com/crylabsorg/prostack-go/ps_kafka"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/crylabsorg/prostack-go-showcase/pkg/events"
@@ -53,6 +57,10 @@ func (c *kafkaController) handleMessage(ctx context.Context, record *kgo.Record)
 	var event events.UserCreatedEvent
 	if err := json.Unmarshal(record.Value, &event); err != nil {
 		// Commit malformed events, matching Term() in the NATS controller.
+		span := trace.SpanFromContext(ctx)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "invalid user.created kafka event")
+		span.SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
 		logger.GetLogger(ctx).Error(
 			"invalid user.created kafka event",
 			zap.Int32("partition", record.Partition),
