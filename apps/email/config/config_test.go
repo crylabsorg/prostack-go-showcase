@@ -5,14 +5,14 @@ import (
 	"os"
 	"testing"
 
-	"github.com/crylabsorg/prostack-go/testutils"
+	"github.com/crylabsorg/prostack-go/ps_test"
 	"github.com/stretchr/testify/require"
 
 	"github.com/crylabsorg/prostack-go-showcase/email/config"
 )
 
 func TestConfig(t *testing.T) {
-	t.Chdir(testutils.ProjectRoot())
+	t.Chdir(ps_test.ProjectRoot())
 	t.Setenv("MONGO_URI", "")
 	t.Setenv("NATS_URL", "")
 	t.Setenv("KAFKA_BROKERS", "")
@@ -26,7 +26,7 @@ func TestConfig(t *testing.T) {
 }
 
 func TestKafkaConfig(t *testing.T) {
-	t.Chdir(testutils.ProjectRoot())
+	t.Chdir(ps_test.ProjectRoot())
 	t.Setenv("MONGO_URI", "")
 	t.Setenv("NATS_URL", "")
 	t.Setenv("KAFKA_BROKERS", "localhost:9092,localhost:9094")

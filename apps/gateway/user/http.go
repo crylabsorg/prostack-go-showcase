@@ -4,18 +4,18 @@ import (
 	"encoding/json/v2"
 	"net/http"
 
-	"github.com/crylabsorg/prostack-go/controller"
+	"github.com/crylabsorg/prostack-go/ps_controller"
 
 	userv1 "github.com/crylabsorg/prostack-go-showcase/pkg/proto/user/v1"
 )
 
 func RegisterHTTP(mux *http.ServeMux, users userv1.UserServiceClient) {
-	handler := httpController{Controller: controller.NewController(), users: users}
+	handler := httpController{Controller: ps_controller.NewController(), users: users}
 	HandlerFromMux(handler, mux)
 }
 
 type httpController struct {
-	controller.Controller
+	ps_controller.Controller
 
 	users userv1.UserServiceClient
 }

@@ -23,9 +23,9 @@
                     "message",
                     "errorCode"
                 ],
-                "x-go-type": "controller.ErrorResponse",
+                "x-go-type": "ps_controller.ErrorResponse",
                 "x-go-type-import": {
-                    "path": "github.com/crylabsorg/prostack-go/controller"
+                    "path": "github.com/crylabsorg/prostack-go/ps_controller"
                 }
             },
             "CreateUserRequest": {

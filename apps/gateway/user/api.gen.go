@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/crylabsorg/prostack-go/controller"
+	"github.com/crylabsorg/prostack-go/ps_controller"
 	"github.com/oapi-codegen/runtime"
 )
 
@@ -21,7 +21,7 @@ type CreateUserRequest struct {
 }
 
 // ErrorResponse defines model for ErrorResponse.
-type ErrorResponse = controller.ErrorResponse
+type ErrorResponse = ps_controller.ErrorResponse
 
 // UserResponse defines model for UserResponse.
 type UserResponse struct {
