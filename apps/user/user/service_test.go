@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/crylabsorg/prostack-go/controller"
+	"github.com/crylabsorg/prostack-go/ps_controller"
 	"github.com/crylabsorg/prostack-go/ps_error"
 	"github.com/crylabsorg/prostack-go/ps_grpc"
 	"github.com/crylabsorg/prostack-go/ps_test"
@@ -140,7 +140,7 @@ func TestUserErrorHTTPStatus(t *testing.T) {
 			)
 			require.Equal(t, tc.grpcStatus, status.Code(rpcErr))
 			response := httptest.NewRecorder()
-			controller.NewController().WriteError(t.Context(), response, rpcErr)
+			ps_controller.NewController().WriteError(t.Context(), response, rpcErr)
 			require.Equal(t, tc.httpStatus, response.Code)
 		})
 	}

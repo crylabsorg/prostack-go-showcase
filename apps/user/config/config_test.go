@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/crylabsorg/prostack-go/logger"
-	"github.com/crylabsorg/prostack-go/testutils"
+	"github.com/crylabsorg/prostack-go/ps_test"
 	"github.com/stretchr/testify/require"
 
 	"github.com/crylabsorg/prostack-go-showcase/user/config"
@@ -12,7 +12,7 @@ import (
 
 //nolint:paralleltest // t.Chdir changes the process working directory.
 func TestConfig(t *testing.T) {
-	t.Chdir(testutils.ProjectRoot())
+	t.Chdir(ps_test.ProjectRoot())
 
 	cfg, err := config.New()
 	require.NoError(t, err)
