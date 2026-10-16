@@ -44,7 +44,6 @@ The walkthrough runs infrastructure in Docker and the three Go applications on y
 ```sh
 git clone --recurse-submodules https://github.com/crylabsorg/prostack-go-showcase.git
 cd prostack-go-showcase
-export GOEXPERIMENT=jsonv2
 make mod-download
 ```
 
@@ -82,20 +81,18 @@ Open three terminals at the repository root and run one command in each:
 
 ```sh
 # Terminal 1
-GOEXPERIMENT=jsonv2 make run-user
+make run-user
 ```
 
 ```sh
 # Terminal 2
-GOEXPERIMENT=jsonv2 make run-email
+make run-email
 ```
 
 ```sh
 # Terminal 3
-GOEXPERIMENT=jsonv2 make run-gateway
+make run-gateway
 ```
-
-`GOEXPERIMENT=jsonv2` enables the `encoding/json/v2` package used by the project. It is repeated here because a shell's exported environment is not inherited by a new terminal.
 
 In a fourth terminal, check all three processes:
 
@@ -262,10 +259,9 @@ This is a runnable reference application with production-oriented patterns. The 
 
 ## Development
 
-Run from the repository root with `GOEXPERIMENT=jsonv2` enabled. Testcontainers requires a reachable Docker daemon and may download its pinned container images.
+Run from the repository root. Testcontainers requires a reachable Docker daemon and may download its pinned container images.
 
 ```sh
-export GOEXPERIMENT=jsonv2
 make help
 make build
 make test
@@ -293,7 +289,6 @@ make -C prostack-go test
 | Symptom | What to check |
 | --- | --- |
 | Make cannot find `prostack-go/make/*.mk` | Run `git submodule update --init --recursive`. Downloading a source ZIP does not initialize submodules. |
-| `encoding/json/v2` is excluded by build constraints | Enable `GOEXPERIMENT=jsonv2` in every terminal running Go commands. |
 | Docker cannot connect, or a port is already allocated | Start the Docker daemon and check the ports listed in the quick start. Check application ports `33000`–`33002` and gRPC port `43001` too. |
 | Database queries fail with a missing `users` or `user_outbox` relation | Run `make migrate-up-user` against the intended database. |
 | MongoDB reports replica-set or transaction errors during startup | Wait for replica-set initialization and inspect `docker compose -f devops/docker-compose.yaml logs mongo`. |
