@@ -25,5 +25,3 @@ Add the domains to your system `hosts` file so they resolve to your local machin
 The file is located at `/etc/hosts` on macOS and Linux, and at `C:\Windows\System32\drivers\etc\hosts` on Windows. Then, from the `devops` directory, start the infrastructure with `docker compose up -d`. Your browser will warn that the self-signed certificate is not trusted.
 
 To prevent the browser from warning that the certificate is not trusted, it is recommended to add `certs/prostack.crt` to your operating system's trusted certificates. Search for instructions for your operating system.
-
-Kafka runs in single-node KRaft mode at `localhost:9092` with persistent storage in `kafka_data`. Applications run on the host, matching the image's default advertised listener. The user service publishes `user.created` to NATS and Kafka. The email service starts consumers for each configured broker (`NATS_URL` and `KAFKA_BROKERS`); its default config enables only NATS. See the [email service configuration](../apps/email/README.md) to enable Kafka or both consumers.
