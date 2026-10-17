@@ -6,6 +6,8 @@ A **Go backend starter and microservices reference application** built on [prost
 
 prostack means **production stack**. It grew out of a recurring problem: across projects and companies, the same infrastructure work had to happen before the first business feature. `prostack-go` makes that foundation reusable; this showcase demonstrates how to build on it.
 
+I also saw organizations with many services and teams, each assembling its own mix of technologies and infrastructure conventions. I wanted a shared baseline for recurring concerns—lifecycle, errors, telemetry, and tests—to standardize engineering practices across teams and make it easier for developers to move between projects. Teams can choose the components their applications need.
+
 [Quick start](#quick-start) · [Architecture](#architecture) · [Use it for your project](#use-it-for-your-project) · [Development](#development) · [Troubleshooting](#troubleshooting) · [Contributing](#contributing)
 
 ## Why prostack?
@@ -28,7 +30,9 @@ prostack gives you a foundation you can inspect and a small application that sho
 
 This is for Go backend developers and teams starting services, standardizing infrastructure, or learning event-driven Go architecture. The showcase is deliberately small: user creation and welcome email delivery make the infrastructure visible without hiding it behind a large business domain.
 
-To adopt individual packages or start with a service that needs no databases or brokers, use the [prostack-go README and standalone quick start](https://github.com/crylabsorg/prostack-go#quick-start).
+The two databases demonstrate different persistence integrations. Both brokers carry the same event to demonstrate fanout and duplicate consumption. Use this as a reference for selecting the integrations your application needs.
+
+To adopt individual packages, see the [prostack-go integration guide](https://github.com/crylabsorg/prostack-go#integration-guide). For a single HTTP service without databases or brokers, use its optional [minimal bootstrap example](https://github.com/crylabsorg/prostack-go#minimal-bootstrap-example).
 
 ## Quick start
 
@@ -54,23 +58,15 @@ The submodule is required: application modules resolve `prostack-go` through loc
 Run from the repository root:
 
 ```sh
-docker compose -f devops/docker-compose.yaml up -d postgres mongo nats kafka jaeger
-docker compose -f devops/docker-compose.yaml ps
-docker compose -f devops/docker-compose.yaml exec -T postgres pg_isready -U postgres -d postgres
+docker compose -f devops/docker-compose.yaml up -d
 ```
 
-Wait for PostgreSQL to report `accepting connections`. Containers may take a few seconds to initialize, especially MongoDB's replica set and Kafka. If a dependency is still starting, inspect its logs before continuing:
-
-```sh
-docker compose -f devops/docker-compose.yaml logs --tail=50 postgres mongo nats kafka
-```
-
-This starts the dependencies used by the demo. Redis is available in Compose but unused by this workflow; Traefik is optional. The required host ports are `5432`, `27017`, `4222`, `9092`, `4317`, `4318`, and `16686`.
+Compose starts all infrastructure services. Allow a few seconds for them to initialize before applying the migration.
 
 ### 3. Apply the database migration
 
 ```sh
-make migrate-up-user
+make migrate-up
 ```
 
 Atlas applies the checked-in migration to the local PostgreSQL database. MongoDB's delivery collection is initialized by the email service.
@@ -290,7 +286,7 @@ make -C prostack-go test
 | --- | --- |
 | Make cannot find `prostack-go/make/*.mk` | Run `git submodule update --init --recursive`. Downloading a source ZIP does not initialize submodules. |
 | Docker cannot connect, or a port is already allocated | Start the Docker daemon and check the ports listed in the quick start. Check application ports `33000`–`33002` and gRPC port `43001` too. |
-| Database queries fail with a missing `users` or `user_outbox` relation | Run `make migrate-up-user` against the intended database. |
+| Database queries fail with a missing `users` or `user_outbox` relation | Run `make migrate-up` against the intended database. |
 | MongoDB reports replica-set or transaction errors during startup | Wait for replica-set initialization and inspect `docker compose -f devops/docker-compose.yaml logs mongo`. |
 | HTTP works but no welcome email appears | Check the email terminal and both broker logs. Confirm `processed_at` in PostgreSQL and `sent_at` in MongoDB; readiness alone does not verify consumers. |
 | A repeated create request returns 409 | The email already exists in retained PostgreSQL data. Use a new email or fetch the existing user by its ID. |

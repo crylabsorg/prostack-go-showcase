@@ -1,3 +1,5 @@
+github.com/crylabsorg/prostack-go v0.1.0 h1:nY92n/4UaegzH7aad0Ln3z79MJKS7HGDY1p+Tl/6agY=
+github.com/crylabsorg/prostack-go v0.1.0/go.mod h1:sKEyu83L3yzig/r2xlDjZ4UZa4u1R1sl/DvRi4WDkho=
 github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=
 github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
